@@ -6,3 +6,5 @@ obj/
 .env
 .env.*
 !.env.example
+reference/java-server/
+reference/java-crosschecks/
