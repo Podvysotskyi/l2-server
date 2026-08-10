@@ -32,7 +32,7 @@ services:
   login-server:
     image: ${L2_LOGIN_SERVER_IMAGE:-l2-server-login:dev}
     build:
-      context: .
+      context: ${L2_SERVER_ROOT:-.}
       dockerfile: docker/dotnet.Dockerfile
       args:
         PROJECT: src/L2.LoginServer/L2.LoginServer.csproj
@@ -48,7 +48,7 @@ services:
   game-server:
     image: ${L2_GAME_SERVER_IMAGE:-l2-server-game:dev}
     build:
-      context: .
+      context: ${L2_SERVER_ROOT:-.}
       dockerfile: docker/dotnet.Dockerfile
       args:
         PROJECT: src/L2.GameServer/L2.GameServer.csproj
