@@ -24,13 +24,14 @@ dotnet test L2.Server.slnx --no-build --no-restore
 
 ## Docker Compose
 
-Run PostgreSQL, the Login Server, and the Game Server:
+The combined development model lives in the `l2-infra` repository. From its
+root, run PostgreSQL, the Login Server, and the Game Server with:
 
 ```sh
-docker compose up --build
+docker compose up --build postgres login-server game-server
 ```
 
-The Login Server is available at <http://localhost:5001> and the Game Server at <http://localhost:5002>. The repository also owns `compose.e2e.yaml`, which provides isolated PostgreSQL infrastructure for cross-product browser tests.
+The Login Server is available at <http://localhost:5001> and the Game Server at <http://localhost:5002>. The integration model also provides the isolated `postgres-e2e` service under its `e2e` profile.
 
 ## Boundaries
 
