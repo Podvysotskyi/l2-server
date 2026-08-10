@@ -6,7 +6,7 @@ This repository owns authoritative Login/Game behavior, player identity, player 
 
 ## Contracts
 
-Consume `L2.Contracts.*` packages for stable cross-service DTOs and immutable release manifests. Do not share EF Core entities, DbContexts, migrations, or domain rules through contracts.
+Define external input contracts at the Server boundary and map producer payloads into Server-owned models. Do not depend on a shared contracts repository or share EF Core entities, DbContexts, migrations, or domain rules across services.
 
 ## Commands
 

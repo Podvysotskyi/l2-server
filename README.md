@@ -35,8 +35,4 @@ The Login Server is available at <http://localhost:5001> and the Game Server at 
 
 ## Boundaries
 
-Server owns gameplay authority and persistence. It consumes immutable content-release contracts from `l2-contracts`; it must not reference Studio authoring EF Core models. Admin reads Server-owned information through narrow internal read APIs or an Admin-owned read model, never by importing Server `DbContext` classes.
-
-## Behavioral research
-
-Pinned read-only Java references and compatibility notes live under `reference/`. Retrieve them with `./scripts/reference-java.sh`; original Java sources remain ignored and must never be committed.
+Server owns gameplay authority and persistence. External inputs use contracts defined at the Server boundary and are mapped into Server-owned models; Server must not reference Studio authoring EF Core models. Admin reads Server-owned information through narrow internal read APIs or an Admin-owned read model, never by importing Server `DbContext` classes.
