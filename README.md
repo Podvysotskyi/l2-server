@@ -22,6 +22,16 @@ dotnet build L2.Server.slnx --no-restore
 dotnet test L2.Server.slnx --no-build --no-restore
 ```
 
+## Docker Compose
+
+Run PostgreSQL, the Login Server, and the Game Server:
+
+```sh
+docker compose up --build
+```
+
+The Login Server is available at <http://localhost:5001> and the Game Server at <http://localhost:5002>. The repository also owns `compose.e2e.yaml`, which provides isolated PostgreSQL infrastructure for cross-product browser tests.
+
 ## Boundaries
 
 Server owns gameplay authority and persistence. It consumes immutable content-release contracts from `l2-contracts`; it must not reference Studio authoring EF Core models. Admin reads Server-owned information through narrow internal read APIs or an Admin-owned read model, never by importing Server `DbContext` classes.
