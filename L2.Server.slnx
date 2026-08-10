@@ -1,2 +1,13 @@
 <Solution>
+  <Folder Name="/src/">
+    <Project Path="src/L2.GameContent/L2.GameContent.csproj" />
+    <Project Path="src/L2.GameServer/L2.GameServer.csproj" />
+    <Project Path="src/L2.LoginServer/L2.LoginServer.csproj" />
+    <Project Path="src/L2.PlayerCharacters/L2.PlayerCharacters.csproj" />
+    <Project Path="src/L2.PlayerIdentity/L2.PlayerIdentity.csproj" />
+    <Project Path="src/L2.Shared/L2.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/L2.Server.Tests/L2.Server.Tests.csproj" />
+  </Folder>
 </Solution>

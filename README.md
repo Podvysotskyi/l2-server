@@ -1,12 +1,17 @@
 # L2 Server
 
-The authoritative L2 backend. This repository will own the Login Server, Game Server, player identity, player characters, and Server-owned persistence/migrations.
+The authoritative L2 backend. This repository owns the Login Server, Game Server, player identity, player characters, and Server-owned content and persistence migrations.
 
 ## Layout
 
 ```text
-src/    Server applications and owned libraries
-tests/  Server-focused unit and integration tests
+src/L2.LoginServer/       Player authentication and session issuance
+src/L2.GameServer/        Game session handoff and authoritative endpoints
+src/L2.PlayerIdentity/    Account and credential persistence
+src/L2.PlayerCharacters/  Character persistence and state transitions
+src/L2.GameContent/       Runtime game-content persistence
+src/L2.Shared/            Server-local hosting and observability support
+tests/L2.Server.Tests/    Server-focused unit and integration tests
 ```
 
 ## Commands
