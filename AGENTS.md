@@ -10,11 +10,13 @@ Define external input contracts at the Server boundary and map producer payloads
 
 ## Commands
 
+Run development, validation, tests, and builds through Docker. Do not use host-installed .NET tooling.
+
 ```sh
-dotnet restore
-dotnet build L2.Server.slnx --no-restore
-dotnet test L2.Server.slnx --no-build --no-restore
+docker build --target build --tag l2-server-build .
 ```
+
+`L2.Server.Api` and `L2.Server.Game` are thin hosts. Public DTOs belong in Contracts, dependency composition in Configurations, orchestration in Services, persistence abstractions in Repositories.Interfaces, and implementations in Repositories. Keep controllers thin and every public record, interface, and class in its own file.
 
 ## Conventions
 

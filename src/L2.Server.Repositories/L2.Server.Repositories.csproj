@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../L2.Server.Context/L2.Server.Context.csproj" />
+    <ProjectReference Include="../L2.Server.Contracts/L2.Server.Contracts.csproj" />
+    <ProjectReference Include="../L2.Server.Repositories.Interfaces/L2.Server.Repositories.Interfaces.csproj" />
+    <ProjectReference Include="../L2.Server.Exceptions/L2.Server.Exceptions.csproj" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+</Project>

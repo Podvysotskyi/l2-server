@@ -1,37 +1,45 @@
 # L2 Server
 
-The authoritative L2 backend. This repository owns the Login Server, Game Server, player identity, player characters, and Server-owned content and persistence migrations.
+The authoritative L2 backend. This repository owns the Server API, Game Server, player identity, player characters, and Server-owned content and persistence migrations.
 
 ## Layout
 
 ```text
-src/L2.LoginServer/       Player authentication and session issuance
-src/L2.GameServer/        Game session handoff and authoritative endpoints
-src/L2.PlayerIdentity/    Account and credential persistence
-src/L2.PlayerCharacters/  Character persistence and state transitions
-src/L2.GameContent/       Runtime game-content persistence
-src/L2.Shared/            Server-local hosting and observability support
-tests/L2.Server.Tests/    Server-focused unit and integration tests
+src/L2.Server.Api/        L2.Server.Api HTTP host, controllers, and filters
+src/L2.Server.Game/       L2.Server.Game runtime host
+src/L2.Server.Contracts/  Public Requests, Responses, Classes, and protocol contracts
+src/L2.Server.Context/    Entity definitions, identifiers, seed data, and the EF Core context
+src/L2.Server.Migrations/ EF Core migration stream for the Server context
+src/L2.Server.Configurations/ Dependency, persistence, and HTTP composition
+src/L2.Server.Services*/  Service interfaces and authoritative orchestration
+src/L2.Server.Repositories*/ Repository interfaces and implementations
 ```
 
 ## Commands
 
 ```sh
-dotnet restore
-dotnet build L2.Server.slnx --no-restore
-dotnet test L2.Server.slnx --no-build --no-restore
+docker build --target build --tag l2-server-build .
 ```
 
 ## Docker Compose
 
-The combined development model lives in the `l2-infra` repository. From its
-root, run PostgreSQL, the Login Server, and the Game Server with:
+Run the Server API, Game Server, PostgreSQL, and Redis directly from this repository:
 
 ```sh
-docker compose up --build postgres login-server game-server
+docker compose up --build postgres redis api-server game-server
 ```
 
-The Login Server is available at <http://localhost:5001> and the Game Server at <http://localhost:5002>. The integration model also provides the isolated `postgres-e2e` service under its `e2e` profile.
+The Server API is available at <http://localhost:5001>, the Game Server is available for runtime health checks at <http://localhost:5002>, PostgreSQL is bound to `localhost:5432`, and Redis is bound to `localhost:6379`.
+
+Both hosts connect to the same `l2-server` database and use PostgreSQL's single `public` schema.
+
+Development settings connect to `localhost`; Production settings connect to the Compose `postgres` service. Both use database `l2-server` with user `l2` and password `secret`; no `.env` file is required.
+
+If `postgres-data` was initialized with different credentials, recreate that named volume before starting the updated stack.
+
+Game-session access tokens are random, opaque values stored as hashes in PostgreSQL. The API issues them and the Game Server validates them for gameplay WebSockets.
+
+The Server API exchanges its authenticated cookie for a single-use game ticket and then an opaque game-session token. It authorizes character management over HTTP; the Game Server opens protocol-v2 gameplay WebSockets only after character selection.
 
 ## Boundaries
 

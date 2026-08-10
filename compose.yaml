@@ -1,0 +1,74 @@
+name: l2-server
+
+x-dotnet-environment: &dotnet-environment
+  ASPNETCORE_ENVIRONMENT: Production
+  ASPNETCORE_URLS: http://+:8080
+
+x-server-healthcheck: &server-healthcheck
+  test:
+    [
+      'CMD',
+      'bash',
+      '-c',
+      'exec 3<>/dev/tcp/127.0.0.1/8080 && printf "GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n" >&3 && grep --quiet "^HTTP/1.1 200" <&3'
+    ]
+  interval: 5s
+  timeout: 3s
+  retries: 30
+  start_period: 10s
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: l2-server
+      POSTGRES_USER: l2
+      POSTGRES_PASSWORD: secret
+    ports: ['127.0.0.1:5432:5432']
+    volumes: [postgres-data:/var/lib/postgresql]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports: ['127.0.0.1:6379:6379']
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  api-server:
+    build:
+      context: .
+      target: api-production
+    environment: *dotnet-environment
+    ports: ['127.0.0.1:5001:8080']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck: *server-healthcheck
+    restart: unless-stopped
+
+  game-server:
+    build:
+      context: .
+      target: game-production
+    environment: *dotnet-environment
+    ports: ['127.0.0.1:5002:8080']
+    depends_on:
+      api-server:
+        condition: service_healthy
+    healthcheck: *server-healthcheck
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>L2.Server.Game</AssemblyName>
+    <RootNamespace>L2.Server.Game</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../L2.Server.Contracts/L2.Server.Contracts.csproj" />
+    <ProjectReference Include="../L2.Server.Configurations/L2.Server.Configurations.csproj" />
+    <ProjectReference Include="../L2.Server.Services/L2.Server.Services.csproj" />
+    <ProjectReference Include="../L2.Server.Services.Interfaces/L2.Server.Services.Interfaces.csproj" />
+  </ItemGroup>
+</Project>

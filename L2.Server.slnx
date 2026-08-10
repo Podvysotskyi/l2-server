@@ -1,13 +1,15 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/L2.GameContent/L2.GameContent.csproj" />
-    <Project Path="src/L2.GameServer/L2.GameServer.csproj" />
-    <Project Path="src/L2.LoginServer/L2.LoginServer.csproj" />
-    <Project Path="src/L2.PlayerCharacters/L2.PlayerCharacters.csproj" />
-    <Project Path="src/L2.PlayerIdentity/L2.PlayerIdentity.csproj" />
-    <Project Path="src/L2.Shared/L2.Shared.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/L2.Server.Tests/L2.Server.Tests.csproj" />
+    <Project Path="src/L2.Server.Game/L2.Server.Game.csproj" />
+    <Project Path="src/L2.Server.Api/L2.Server.Api.csproj" />
+    <Project Path="src/L2.Server.Contracts/L2.Server.Contracts.csproj" />
+    <Project Path="src/L2.Server.Context/L2.Server.Context.csproj" />
+    <Project Path="src/L2.Server.Migrations/L2.Server.Migrations.csproj" />
+    <Project Path="src/L2.Server.Configurations/L2.Server.Configurations.csproj" />
+    <Project Path="src/L2.Server.Exceptions/L2.Server.Exceptions.csproj" />
+    <Project Path="src/L2.Server.Repositories.Interfaces/L2.Server.Repositories.Interfaces.csproj" />
+    <Project Path="src/L2.Server.Repositories/L2.Server.Repositories.csproj" />
+    <Project Path="src/L2.Server.Services/L2.Server.Services.csproj" />
+    <Project Path="src/L2.Server.Services.Interfaces/L2.Server.Services.Interfaces.csproj" />
   </Folder>
 </Solution>

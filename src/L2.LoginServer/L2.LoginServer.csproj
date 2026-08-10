@@ -1,7 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
-  <PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="../L2.PlayerIdentity/L2.PlayerIdentity.csproj" />
-    <ProjectReference Include="../L2.Shared/L2.Shared.csproj" />
-  </ItemGroup>
-</Project>
