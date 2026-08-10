@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/L2.Server.Configurations/L2.Server.Configurations.csproj" />
+    <ProjectReference Include="../../src/L2.Server.Repositories.Interfaces/L2.Server.Repositories.Interfaces.csproj" />
+    <ProjectReference Include="../../src/L2.Server.Services.Interfaces/L2.Server.Services.Interfaces.csproj" />
+  </ItemGroup>
+</Project>

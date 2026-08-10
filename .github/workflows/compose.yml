@@ -1,0 +1,46 @@
+name: Compose
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - compose.yaml
+      - .dockerignore
+      - Dockerfile
+      - src/L2.Server.Api/appsettings.Development.json
+      - src/L2.Server.Game/appsettings.Development.json
+      - .github/workflows/compose.yml
+  push:
+    branches: [main]
+    paths:
+      - compose.yaml
+      - .dockerignore
+      - Dockerfile
+      - src/L2.Server.Api/appsettings.Development.json
+      - src/L2.Server.Game/appsettings.Development.json
+      - .github/workflows/compose.yml
+  workflow_dispatch:
+
+concurrency:
+  group: compose-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Validate Compose model
+        run: >-
+          docker run --rm
+          --volume "$PWD:/workspace"
+          --workdir /workspace
+          docker:29-cli
+          compose config
+      - name: Build Compose images
+        run: docker compose build

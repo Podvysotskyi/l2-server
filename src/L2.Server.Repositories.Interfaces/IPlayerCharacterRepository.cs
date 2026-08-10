@@ -4,24 +4,29 @@ namespace L2.Server.Repositories.Interfaces;
 
 public interface IPlayerCharacterRepository
 {
+    Task<int> CleanupExpiredAsync(
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PlayerCharacterSummary>> ListAsync(
         Guid accountId,
         CancellationToken cancellationToken = default);
     Task<CharacterCreationOptions> GetCreationOptionsAsync(CancellationToken cancellationToken = default);
-    Task<CharacterOperationResult> CreateAsync(
-        Guid accountId,
-        CharacterCreationRequest request,
+    Task<CharacterMutationResult> CreateAsync(
+        CharacterCreationData character,
         CancellationToken cancellationToken = default);
-    Task<CharacterOperationResult> SelectAsync(
+    Task<CharacterMutationResult> SelectAsync(
         Guid accountId,
         Guid characterId,
         CancellationToken cancellationToken = default);
-    Task<CharacterOperationResult> ScheduleDeletionAsync(
+    Task<CharacterMutationResult> ScheduleDeletionAsync(
         Guid accountId,
         Guid characterId,
+        DateTimeOffset deleteAfter,
+        DateTimeOffset now,
         CancellationToken cancellationToken = default);
-    Task<CharacterOperationResult> RestoreAsync(
+    Task<CharacterMutationResult> RestoreAsync(
         Guid accountId,
         Guid characterId,
+        DateTimeOffset now,
         CancellationToken cancellationToken = default);
 }

@@ -1,5 +1,4 @@
 using L2.Server.Contracts;
-using L2.Server.Services;
 
 namespace L2.Server.Api.Filters;
 
@@ -7,5 +6,5 @@ namespace L2.Server.Api.Filters;
 public sealed class ValidateLoginRequestAttribute : ValidateRequestAttribute<LoginRequest>
 {
     protected override Dictionary<string, string[]> Validate(LoginRequest request) =>
-        CredentialRules.Validate(request);
+        CredentialRequestValidator.Validate(request);
 }

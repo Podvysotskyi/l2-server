@@ -1,46 +1,67 @@
 # L2 Server
 
-The authoritative L2 backend. This repository owns the Server API, Game Server, player identity, player characters, and Server-owned content and persistence migrations.
+Authoritative L2 backend for player identity, character management, gameplay-session authority, and Server-owned game content. It provides an HTTP API and a separate Game Server runtime, both backed by the same PostgreSQL database.
 
-## Layout
+## Architecture
 
-```text
-src/L2.Server.Api/        L2.Server.Api HTTP host, controllers, and filters
-src/L2.Server.Game/       L2.Server.Game runtime host
-src/L2.Server.Contracts/  Public Requests, Responses, Classes, and protocol contracts
-src/L2.Server.Context/    Entity definitions, identifiers, seed data, and the EF Core context
-src/L2.Server.Migrations/ EF Core migration stream for the Server context
-src/L2.Server.Configurations/ Dependency, persistence, and HTTP composition
-src/L2.Server.Services*/  Service interfaces and authoritative orchestration
-src/L2.Server.Repositories*/ Repository interfaces and implementations
-```
+The .NET solution is split into focused projects:
 
-## Commands
+- `L2.Server.Api` — HTTP host, controllers, request filters, authentication, and HTTP composition
+- `L2.Server.Game` — gameplay runtime host, WebSocket endpoints, and protocol-session composition
+- `L2.Server.Configurations` — dependency registration, persistence, service identity, migration hosting, health endpoints, and process-level configuration
+- `L2.Server.Contracts` — Server-owned models, requests, responses, and protocol contracts
+- `L2.Server.Context` — EF Core entity definitions, identifiers, and the `L2ServerDbContext`
+- `L2.Server.Migrations` — the authoritative EF Core migration stream
+- `L2.Server.Services.Interfaces` — service abstractions and service-facing models
+- `L2.Server.Services` — authoritative application orchestration
+- `L2.Server.Repositories.Interfaces` — persistence abstractions and repository-facing models
+- `L2.Server.Repositories` — EF Core persistence implementations and database exception classification
+- `L2.Server.Exceptions` — Server-specific exception types
+- `tests/L2.Server.*.Tests` — database-free unit tests grouped by owning layer
 
-```sh
-docker build --target build --tag l2-server-build .
-```
+The Server owns gameplay authority and persistence. Studio authoring models, Admin UI/API code, browser code, and external-service entities do not belong here. Producers map their inputs into Server-owned contracts; no other service imports Server EF entities, `DbContext` types, migrations, or domain rules.
 
-## Docker Compose
+`L2.Server.Api` issues opaque, hashed game-session tokens and authorizes character management over HTTP. It exchanges an authenticated cookie for a single-use game ticket. `L2.Server.Game` validates the ticket-derived game session and opens protocol-v2 gameplay WebSockets only after character selection.
 
-Run the Server API, Game Server, PostgreSQL, and Redis directly from this repository:
+## Prerequisites
+
+- Docker Engine with Docker Compose
+
+## Development
+
+Start the local Server stack:
 
 ```sh
 docker compose up --build postgres redis api-server game-server
 ```
 
-The Server API is available at <http://localhost:5001>, the Game Server is available for runtime health checks at <http://localhost:5002>, PostgreSQL is bound to `localhost:5432`, and Redis is bound to `localhost:6379`.
+Compose starts PostgreSQL, Redis, the Server API, and the Game Server. The API is available at <http://localhost:5001>; the Game Server health endpoints are at <http://localhost:5002>. PostgreSQL and Redis are bound to `localhost:5432` and `localhost:6379`.
 
-Both hosts connect to the same `l2-server` database and use PostgreSQL's single `public` schema.
+Both hosts use the `l2-server` PostgreSQL database and its `public` schema. Compose uses Production app settings, which connect to the `postgres` service. Development app settings use `localhost`. The checked-in development stack uses database `l2-server`, user `l2`, and password `secret`; override settings through standard ASP.NET Core configuration when needed.
 
-Development settings connect to `localhost`; Production settings connect to the Compose `postgres` service. Both use database `l2-server` with user `l2` and password `secret`; no `.env` file is required.
+The API and Game Server apply pending Server migrations at startup by default. Set `Persistence__RunMigrations=false` only when migrations are applied separately. Their `/health/live` endpoints report process liveness; `/health/ready` also requires the migration state to be current.
 
-If `postgres-data` was initialized with different credentials, recreate that named volume before starting the updated stack.
+If `postgres-data` was initialized with different credentials, recreate that named volume before starting the checked-in stack.
 
-Game-session access tokens are random, opaque values stored as hashes in PostgreSQL. The API issues them and the Game Server validates them for gameplay WebSockets.
+GitHub workflows validate the Server and Compose model independently. Pull requests and `main` pushes validate only. Pushing a `v*` tag validates and publishes `ghcr.io/podvysotskyi/l2-server-api` and `ghcr.io/podvysotskyi/l2-game-server` with the Git tag and `latest` tags.
 
-The Server API exchanges its authenticated cookie for a single-use game ticket and then an opaque game-session token. It authorizes character management over HTTP; the Game Server opens protocol-v2 gameplay WebSockets only after character selection.
+## Checks
 
-## Boundaries
+Run builds, tests, and Compose validation inside Docker from the repository root:
 
-Server owns gameplay authority and persistence. External inputs use contracts defined at the Server boundary and are mapped into Server-owned models; Server must not reference Studio authoring EF Core models. Admin reads Server-owned information through narrow internal read APIs or an Admin-owned read model, never by importing Server `DbContext` classes.
+```sh
+docker build --target build --tag l2-server-build .
+docker build --target validate --tag l2-server-validate .
+docker run --rm --volume "$PWD:/workspace" --workdir /workspace docker:29-cli compose config
+docker compose build
+```
+
+The `validate` target restores dependencies, builds the Release solution, and runs every Server test project. Do not use host-installed .NET tooling for development, builds, tests, publishing, or migration operations.
+
+## Codex skills
+
+When this repository is checked out through `l2-infra`, use `$develop-l2-server-api` for identity, character, session, persistence, migration, and HTTP API work. Use `$develop-l2-game-server` for gameplay WebSocket, connection, protocol, and runtime work. Use both for changes to the ticket exchange, game-session token, selected-character state, or another contract shared by the two hosts.
+
+## Security
+
+Do not commit production connection strings, credentials, tokens, original game files, or generated private assets.

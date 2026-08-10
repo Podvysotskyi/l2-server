@@ -1,5 +1,4 @@
 using System.Security.Cryptography;
-using L2.Server.Contracts.Security;
 using L2.Server.Contracts;
 using L2.Server.Repositories.Interfaces;
 using L2.Server.Services.Interfaces;
@@ -21,7 +20,7 @@ public sealed class PlayerAuthenticationService : IPlayerAuthenticationService
         IPlayerAuthenticationRepository repository,
         IPasswordHasher<CredentialRecord> passwordHasher,
         TimeProvider timeProvider,
-        IOptions<AuthenticationOptions> options)
+        IOptions<AuthenticationSessionOptions> options)
     {
         this.repository = repository;
         this.passwordHasher = passwordHasher;
@@ -44,9 +43,9 @@ public sealed class PlayerAuthenticationService : IPlayerAuthenticationService
         var created = await repository.CreateAccountAsync(
             accountId,
             request.Username,
-            CredentialRules.NormalizeUsername(request.Username),
+            CredentialNormalizer.Username(request.Username),
             request.Email.Trim(),
-            CredentialRules.NormalizeEmail(request.Email),
+            CredentialNormalizer.Email(request.Email),
             passwordHash,
             now,
             cancellationToken);
@@ -59,7 +58,7 @@ public sealed class PlayerAuthenticationService : IPlayerAuthenticationService
         string? userAgent,
         CancellationToken cancellationToken)
     {
-        var normalizedEmail = CredentialRules.NormalizeEmail(request.Email);
+        var normalizedEmail = CredentialNormalizer.Email(request.Email);
         var credential = await repository.FindCredentialAsync(normalizedEmail, cancellationToken);
         var verification = credential is null
             ? passwordHasher.VerifyHashedPassword(
@@ -85,7 +84,7 @@ public sealed class PlayerAuthenticationService : IPlayerAuthenticationService
             credential,
             normalizedEmail,
             replacementHash,
-            HashToken(token),
+            OpaqueToken.Hash(token),
             now,
             expiresAt,
             new RequestMetadata(ipAddress, userAgent),
@@ -99,33 +98,28 @@ public sealed class PlayerAuthenticationService : IPlayerAuthenticationService
     {
         var now = timeProvider.GetUtcNow();
         var lookup = await repository.FindSessionAsync(
-            HashToken(token), now, now.Add(sessionLifetime), cancellationToken);
+            OpaqueToken.Hash(token), now, now.Add(sessionLifetime), cancellationToken);
         return lookup is null
             ? null
             : new L2.Server.Services.Interfaces.AuthenticationSessionLookup(lookup.Session, lookup.Refreshed);
     }
 
     public Task LogoutAsync(string token, CancellationToken cancellationToken) =>
-        repository.RevokeSessionAsync(HashToken(token), timeProvider.GetUtcNow(), cancellationToken);
+        repository.RevokeSessionAsync(OpaqueToken.Hash(token), timeProvider.GetUtcNow(), cancellationToken);
 
     public async Task<GameTicketIssue?> CreateGameTicketAsync(string sessionToken, CancellationToken cancellationToken)
     {
-        var ticket = GameSessionToken.Create();
+        var ticket = OpaqueToken.Create();
         var now = timeProvider.GetUtcNow();
         var expiresAt = now.Add(gameTicketLifetime);
         var created = await repository.CreateGameTicketAsync(
-            HashToken(sessionToken),
-            GameSessionToken.Hash(ticket),
+            OpaqueToken.Hash(sessionToken),
+            OpaqueToken.Hash(ticket),
             now,
             expiresAt,
             cancellationToken);
         return created ? new GameTicketIssue(ticket, expiresAt) : null;
     }
 
-    private static string CreateToken() => Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
-        .TrimEnd('=')
-        .Replace('+', '-')
-        .Replace('/', '_');
-
-    private static byte[] HashToken(string token) => SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(token));
+    private static string CreateToken() => OpaqueToken.Create();
 }

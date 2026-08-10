@@ -12,4 +12,11 @@
     <Project Path="src/L2.Server.Services/L2.Server.Services.csproj" />
     <Project Path="src/L2.Server.Services.Interfaces/L2.Server.Services.Interfaces.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/L2.Server.Api.Tests/L2.Server.Api.Tests.csproj" />
+    <Project Path="tests/L2.Server.Configurations.Tests/L2.Server.Configurations.Tests.csproj" />
+    <Project Path="tests/L2.Server.Game.Tests/L2.Server.Game.Tests.csproj" />
+    <Project Path="tests/L2.Server.Repositories.Tests/L2.Server.Repositories.Tests.csproj" />
+    <Project Path="tests/L2.Server.Services.Tests/L2.Server.Services.Tests.csproj" />
+  </Folder>
 </Solution>

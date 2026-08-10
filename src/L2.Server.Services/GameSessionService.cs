@@ -1,5 +1,4 @@
 using L2.Server.Contracts;
-using L2.Server.Contracts.Security;
 using L2.Server.Repositories.Interfaces;
 using L2.Server.Services.Interfaces;
 using Microsoft.Extensions.Options;
@@ -17,24 +16,36 @@ public sealed class GameSessionService(
     public async Task<GameSessionIssue?> ExchangeAsync(string ticket, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(ticket)) return null;
-        var accessToken = GameSessionToken.Create();
-        var session = await repository.RedeemAsync(
-            ticket,
-            GameSessionToken.Hash(accessToken),
+        var accessToken = OpaqueToken.Create();
+        var now = timeProvider.GetUtcNow();
+        var record = await repository.RedeemAsync(
+            OpaqueToken.Hash(ticket),
+            OpaqueToken.Hash(accessToken),
             Guid.NewGuid(),
+            now,
             cancellationToken);
-        return session is null
+        return record is null
             ? null
-            : new GameSessionIssue(accessToken, session, checked(this.options.IdleTimeoutMinutes * 60));
+            : new GameSessionIssue(accessToken, ToState(record), checked(this.options.IdleTimeoutMinutes * 60));
     }
 
     public Task<GameSessionState?> AuthenticateAsync(string accessToken, CancellationToken cancellationToken) =>
         string.IsNullOrWhiteSpace(accessToken)
             ? Task.FromResult<GameSessionState?>(null)
-            : repository.FindActiveAsync(
-                GameSessionToken.Hash(accessToken),
-                timeProvider.GetUtcNow().AddMinutes(-options.IdleTimeoutMinutes),
-                cancellationToken);
+            : FindActiveAsync(accessToken, cancellationToken);
+
+    private async Task<GameSessionState?> FindActiveAsync(
+        string accessToken,
+        CancellationToken cancellationToken)
+    {
+        var now = timeProvider.GetUtcNow();
+        var record = await repository.FindActiveAsync(
+            OpaqueToken.Hash(accessToken),
+            now,
+            now.AddMinutes(-options.IdleTimeoutMinutes),
+            cancellationToken);
+        return record is null ? null : ToState(record);
+    }
 
     public async Task<CharacterOperationResult> SelectCharacterAsync(
         GameSessionState session,
@@ -43,7 +54,11 @@ public sealed class GameSessionService(
     {
         var result = await characters.SelectAsync(session.AccountId, characterId, cancellationToken);
         if (result.Succeeded)
-            await repository.SelectCharacterAsync(session.SessionId, characterId, cancellationToken);
+            await repository.SelectCharacterAsync(
+                session.SessionId,
+                characterId,
+                timeProvider.GetUtcNow(),
+                cancellationToken);
         return result;
     }
 
@@ -59,5 +74,12 @@ public sealed class GameSessionService(
     }
 
     public Task RevokeAsync(GameSessionState session, CancellationToken cancellationToken) =>
-        repository.RevokeAsync(session.SessionId, cancellationToken);
+        repository.RevokeAsync(session.SessionId, timeProvider.GetUtcNow(), cancellationToken);
+
+    private static GameSessionState ToState(GameSessionRecord record) => new(
+        record.SessionId,
+        record.AccountId,
+        record.Username,
+        record.SelectedCharacterId,
+        record.ExpiresAt);
 }

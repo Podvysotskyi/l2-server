@@ -29,7 +29,7 @@ public interface IPlayerAuthenticationRepository
         RequestMetadata metadata,
         DateTimeOffset now,
         CancellationToken cancellationToken);
-    Task<AuthenticationSessionLookup?> FindSessionAsync(
+    Task<AuthenticationSessionRecord?> FindSessionAsync(
         byte[] tokenHash,
         DateTimeOffset now,
         DateTimeOffset refreshedExpiry,

@@ -7,7 +7,6 @@
   <ItemGroup>
     <ProjectReference Include="../L2.Server.Contracts/L2.Server.Contracts.csproj" />
     <ProjectReference Include="../L2.Server.Configurations/L2.Server.Configurations.csproj" />
-    <ProjectReference Include="../L2.Server.Services/L2.Server.Services.csproj" />
     <ProjectReference Include="../L2.Server.Services.Interfaces/L2.Server.Services.Interfaces.csproj" />
   </ItemGroup>
 </Project>

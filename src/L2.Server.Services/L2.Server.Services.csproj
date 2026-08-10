@@ -7,6 +7,5 @@
     <ProjectReference Include="../L2.Server.Contracts/L2.Server.Contracts.csproj" />
     <ProjectReference Include="../L2.Server.Repositories.Interfaces/L2.Server.Repositories.Interfaces.csproj" />
     <ProjectReference Include="../L2.Server.Services.Interfaces/L2.Server.Services.Interfaces.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
   </ItemGroup>
 </Project>

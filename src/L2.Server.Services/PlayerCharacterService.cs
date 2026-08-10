@@ -1,36 +1,112 @@
+using System.Text.RegularExpressions;
 using L2.Server.Contracts;
 using L2.Server.Repositories.Interfaces;
 using L2.Server.Services.Interfaces;
+using Microsoft.Extensions.Options;
 
 namespace L2.Server.Services;
 
-public sealed class PlayerCharacterService(IPlayerCharacterRepository repository) : IPlayerCharacterService
+public sealed partial class PlayerCharacterService(
+    IPlayerCharacterRepository repository,
+    IOptions<PlayerCharacterOptions> options,
+    TimeProvider timeProvider) : IPlayerCharacterService
 {
-    public Task<IReadOnlyList<PlayerCharacterSummary>> ListAsync(
+    private readonly PlayerCharacterOptions options = options.Value;
+
+    public async Task<IReadOnlyList<PlayerCharacterSummary>> ListAsync(
         Guid accountId,
-        CancellationToken cancellationToken = default) => repository.ListAsync(accountId, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        await repository.CleanupExpiredAsync(timeProvider.GetUtcNow(), cancellationToken);
+        return await repository.ListAsync(accountId, cancellationToken);
+    }
 
-    public Task<CharacterCreationOptions> GetCreationOptionsAsync(
-        CancellationToken cancellationToken = default) => repository.GetCreationOptionsAsync(cancellationToken);
+    public async Task<CharacterCreationOptions> GetCreationOptionsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var creationOptions = await repository.GetCreationOptionsAsync(cancellationToken);
+        return creationOptions with { MaximumCharacters = options.MaximumCharactersPerAccount };
+    }
 
-    public Task<CharacterOperationResult> CreateAsync(
+    public async Task<CharacterOperationResult> CreateAsync(
         Guid accountId,
         CharacterCreationRequest request,
-        CancellationToken cancellationToken = default) => repository.CreateAsync(accountId, request, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        var name = request.Name.Trim();
+        if (name.Length < options.MinimumNameLength ||
+            name.Length > options.MaximumNameLength ||
+            !AlphanumericName().IsMatch(name))
+        {
+            return new(false, "invalid_name");
+        }
 
-    public Task<CharacterOperationResult> SelectAsync(
-        Guid accountId,
-        Guid characterId,
-        CancellationToken cancellationToken = default) => repository.SelectAsync(accountId, characterId, cancellationToken);
+        var creationOptions = await repository.GetCreationOptionsAsync(cancellationToken);
+        var rootClass = creationOptions.Classes.SingleOrDefault(candidate => candidate.Id == request.ClassId);
+        var race = rootClass?.AllowedRaces.SingleOrDefault(candidate => candidate.Id == request.RaceId);
+        var sex = race?.AllowedSexes.SingleOrDefault(candidate => candidate.Id == request.SexId);
+        if (rootClass is null || race is null || sex is null)
+        {
+            return new(false, "invalid_class_variant");
+        }
+        if (!sex.Faces.Any(option => option.Id == request.FaceId) ||
+            !sex.HairStyles.Any(option => option.Id == request.HairStyleId) ||
+            !sex.HairColors.Any(option => option.Id == request.HairColorId))
+        {
+            return new(false, "invalid_appearance");
+        }
 
-    public Task<CharacterOperationResult> ScheduleDeletionAsync(
+        var now = timeProvider.GetUtcNow();
+        await repository.CleanupExpiredAsync(now, cancellationToken);
+        return ToResult(await repository.CreateAsync(new CharacterCreationData(
+            accountId,
+            name,
+            name.ToUpperInvariant(),
+            request.ClassId,
+            request.RaceId,
+            request.SexId,
+            request.FaceId,
+            request.HairStyleId,
+            request.HairColorId,
+            options.MaximumCharactersPerAccount,
+            now), cancellationToken));
+    }
+
+    public async Task<CharacterOperationResult> SelectAsync(
         Guid accountId,
         Guid characterId,
         CancellationToken cancellationToken = default) =>
-        repository.ScheduleDeletionAsync(accountId, characterId, cancellationToken);
+        ToResult(await repository.SelectAsync(accountId, characterId, cancellationToken));
 
-    public Task<CharacterOperationResult> RestoreAsync(
+    public async Task<CharacterOperationResult> ScheduleDeletionAsync(
         Guid accountId,
         Guid characterId,
-        CancellationToken cancellationToken = default) => repository.RestoreAsync(accountId, characterId, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        var now = timeProvider.GetUtcNow();
+        return ToResult(await repository.ScheduleDeletionAsync(
+            accountId,
+            characterId,
+            now.AddDays(options.DeletionDelayDays),
+            now,
+            cancellationToken));
+    }
+
+    public async Task<CharacterOperationResult> RestoreAsync(
+        Guid accountId,
+        Guid characterId,
+        CancellationToken cancellationToken = default) =>
+        ToResult(await repository.RestoreAsync(
+            accountId,
+            characterId,
+            timeProvider.GetUtcNow(),
+            cancellationToken));
+
+    private static CharacterOperationResult ToResult(CharacterMutationResult result) => new(
+        result.Succeeded,
+        result.ErrorCode,
+        result.Character);
+
+    [GeneratedRegex("^[A-Za-z0-9]+$", RegexOptions.CultureInvariant)]
+    private static partial Regex AlphanumericName();
 }

@@ -42,11 +42,11 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
             await context.SaveChangesAsync(cancellationToken);
             return true;
         }
-        catch (Exception exception) when (PlayerIdentityDatabase.IsUniqueViolation(exception))
+        catch (Exception exception) when (PostgreSqlExceptionClassifier.IsUniqueViolation(exception))
         {
             return false;
         }
-        catch (Exception exception) when (PlayerIdentityDatabase.IsPersistenceFailure(exception))
+        catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
         {
             throw new ServerRepositoryException("Player account creation failed.", exception);
         }
@@ -68,7 +68,7 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
                     credential.PasswordHash))
                 .SingleOrDefaultAsync(cancellationToken);
         }
-        catch (Exception exception) when (PlayerIdentityDatabase.IsPersistenceFailure(exception))
+        catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
         {
             throw new ServerRepositoryException("Credential lookup failed.", exception);
         }
@@ -106,7 +106,7 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
             await context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
-        catch (Exception exception) when (PlayerIdentityDatabase.IsPersistenceFailure(exception))
+        catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
         {
             throw new ServerRepositoryException("Login session creation failed.", exception);
         }
@@ -126,13 +126,13 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
                 accountId, normalizedEmail, false, "invalid_credentials", metadata, now));
             await context.SaveChangesAsync(cancellationToken);
         }
-        catch (Exception exception) when (PlayerIdentityDatabase.IsPersistenceFailure(exception))
+        catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
         {
             throw new ServerRepositoryException("Failed login recording failed.", exception);
         }
     }
 
-    public async Task<L2.Server.Repositories.Interfaces.AuthenticationSessionLookup?> FindSessionAsync(
+    public async Task<AuthenticationSessionRecord?> FindSessionAsync(
         byte[] tokenHash,
         DateTimeOffset now,
         DateTimeOffset refreshedExpiry,
@@ -161,11 +161,11 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
                 await context.SaveChangesAsync(cancellationToken);
             }
 
-            return new L2.Server.Repositories.Interfaces.AuthenticationSessionLookup(
+            return new AuthenticationSessionRecord(
                 new AuthenticationSession(session.AccountId, session.Account.Username, session.ExpiresAt),
                 refreshed);
         }
-        catch (Exception exception) when (PlayerIdentityDatabase.IsPersistenceFailure(exception))
+        catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
         {
             throw new ServerRepositoryException("Login session lookup failed.", exception);
         }
@@ -208,7 +208,7 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
             await transaction.CommitAsync(cancellationToken);
             return true;
         }
-        catch (Exception exception) when (PlayerIdentityDatabase.IsPersistenceFailure(exception))
+        catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
         {
             throw new ServerRepositoryException("Game session ticket creation failed.", exception);
         }
@@ -223,7 +223,7 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
                 .Where(session => session.TokenHash.SequenceEqual(tokenHash) && session.RevokedAt == null)
                 .ExecuteUpdateAsync(update => update.SetProperty(session => session.RevokedAt, now), cancellationToken);
         }
-        catch (Exception exception) when (PlayerIdentityDatabase.IsPersistenceFailure(exception))
+        catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
         {
             throw new ServerRepositoryException("Login session revocation failed.", exception);
         }

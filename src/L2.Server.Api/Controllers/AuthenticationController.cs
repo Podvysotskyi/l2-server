@@ -1,6 +1,6 @@
 using L2.Server.Contracts;
 using L2.Server.Api.Filters;
-using L2.Server.Services;
+using L2.Server.Configurations;
 using L2.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +14,7 @@ namespace L2.Server.Api.Controllers;
 public sealed class AuthenticationController(
     IAntiforgery antiforgery,
     IPlayerAuthenticationService authentication,
-    IOptions<AuthenticationOptions> options,
+    IOptions<PlayerSessionCookieOptions> cookieOptions,
     IWebHostEnvironment environment) : ControllerBase
 {
     [HttpGet("csrf")]
@@ -70,7 +70,7 @@ public sealed class AuthenticationController(
     [HttpGet("session")]
     public async Task<IActionResult> Session(CancellationToken cancellationToken)
     {
-        if (!Request.Cookies.TryGetValue(options.Value.SessionCookieName, out var token)) return Unauthorized();
+        if (!Request.Cookies.TryGetValue(cookieOptions.Value.SessionCookieName, out var token)) return Unauthorized();
         var lookup = await authentication.FindSessionAsync(token, cancellationToken);
         if (lookup is null)
         {
@@ -86,7 +86,7 @@ public sealed class AuthenticationController(
     public async Task<IActionResult> GameTicket(CancellationToken cancellationToken)
     {
         await antiforgery.ValidateRequestAsync(HttpContext);
-        if (!Request.Cookies.TryGetValue(options.Value.SessionCookieName, out var token)) return Unauthorized();
+        if (!Request.Cookies.TryGetValue(cookieOptions.Value.SessionCookieName, out var token)) return Unauthorized();
         var ticket = await authentication.CreateGameTicketAsync(token, cancellationToken);
         if (ticket is not null) return Ok(ticket);
         DeleteSessionCookie();
@@ -97,7 +97,7 @@ public sealed class AuthenticationController(
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
         await antiforgery.ValidateRequestAsync(HttpContext);
-        if (Request.Cookies.TryGetValue(options.Value.SessionCookieName, out var token))
+        if (Request.Cookies.TryGetValue(cookieOptions.Value.SessionCookieName, out var token))
         {
             await authentication.LogoutAsync(token, cancellationToken);
         }
@@ -106,12 +106,12 @@ public sealed class AuthenticationController(
     }
 
     private void WriteSessionCookie(AuthenticationIssue issue) => Response.Cookies.Append(
-        options.Value.SessionCookieName,
+        cookieOptions.Value.SessionCookieName,
         issue.Token,
         CookieOptions(issue.Session.ExpiresAt));
 
     private void DeleteSessionCookie() => Response.Cookies.Delete(
-        options.Value.SessionCookieName,
+        cookieOptions.Value.SessionCookieName,
         CookieOptions(null));
 
     private CookieOptions CookieOptions(DateTimeOffset? expiresAt) => new()
