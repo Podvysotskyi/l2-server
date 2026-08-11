@@ -39,6 +39,9 @@ public sealed class ServerApplicationConfigurationExtensionsTests
             descriptor.ImplementationType == typeof(GameSessionService));
         Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(IPlayerCharacterRepository) &&
             descriptor.ImplementationType == typeof(PlayerCharacterRepository));
+        Assert.Contains(services,
+            descriptor => descriptor.ServiceType == typeof(ICharacterCreationContentProvider) &&
+                descriptor.ImplementationType == typeof(MockCharacterCreationContentProvider));
 
         using var provider = services.BuildServiceProvider();
         Assert.Equal("test.session",

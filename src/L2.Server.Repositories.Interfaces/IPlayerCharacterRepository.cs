@@ -10,7 +10,6 @@ public interface IPlayerCharacterRepository
     Task<IReadOnlyList<PlayerCharacterSummary>> ListAsync(
         Guid accountId,
         CancellationToken cancellationToken = default);
-    Task<CharacterCreationOptions> GetCreationOptionsAsync(CancellationToken cancellationToken = default);
     Task<CharacterMutationResult> CreateAsync(
         CharacterCreationData character,
         CancellationToken cancellationToken = default);

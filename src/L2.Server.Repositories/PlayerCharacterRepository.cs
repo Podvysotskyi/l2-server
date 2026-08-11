@@ -36,69 +36,15 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
         try
         {
             await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-            var mageClassIds = await context.PlayerClasses.AsNoTracking()
-                .Where(playerClass => playerClass.IsMage)
-                .Select(playerClass => playerClass.Id)
-                .Distinct()
-                .ToListAsync(cancellationToken);
-            var mageIds = mageClassIds.ToHashSet();
             var characters = await context.Characters.AsNoTracking()
                 .Where(character => character.AccountId == accountId)
                 .OrderBy(character => character.AccountSlot)
                 .ToListAsync(cancellationToken);
-            return characters.Select(character => ToSummary(
-                character,
-                mageIds.Contains(character.BaseClassId))).ToArray();
+            return characters.Select(ToSummary).ToArray();
         }
         catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
         {
             throw new ServerRepositoryException("Player character listing failed.", exception);
-        }
-    }
-
-    public async Task<CharacterCreationOptions> GetCreationOptionsAsync(
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-            var roots = await context.PlayerClasses.AsNoTracking()
-                .Where(playerClass => playerClass.ParentClassId == null)
-                .Include(playerClass => playerClass.PlayerRace)
-                .Include(playerClass => playerClass.PlayerSex)
-                .OrderBy(playerClass => playerClass.Id)
-                .ThenBy(playerClass => playerClass.PlayerRaceId)
-                .ThenBy(playerClass => playerClass.PlayerSexId)
-                .ToListAsync(cancellationToken);
-            var faces = await context.PlayerFaces.AsNoTracking().ToListAsync(cancellationToken);
-            var styles = await context.PlayerHairStyles.AsNoTracking().ToListAsync(cancellationToken);
-            var colors = await context.PlayerHairColors.AsNoTracking().ToListAsync(cancellationToken);
-
-            return new CharacterCreationOptions(0,
-                roots.GroupBy(playerClass => new
-                    { playerClass.Id, playerClass.Name, playerClass.IsMage })
-                    .Select(classGroup => new RootClassOption(
-                        (int)classGroup.Key.Id,
-                        classGroup.Key.Name,
-                        classGroup.Key.IsMage,
-                        classGroup.GroupBy(playerClass => new
-                            { playerClass.PlayerRaceId, playerClass.PlayerRace.Name })
-                            .Select(raceGroup => new RaceOption(
-                                (int)raceGroup.Key.PlayerRaceId,
-                                raceGroup.Key.Name,
-                                raceGroup.Select(playerClass => new SexOption(
-                                        (int)playerClass.PlayerSexId,
-                                        playerClass.PlayerSex.Name,
-                                        Appearance(faces, playerClass.PlayerRaceId, playerClass.PlayerSexId),
-                                        Appearance(styles, playerClass.PlayerRaceId, playerClass.PlayerSexId),
-                                        Appearance(colors, playerClass.PlayerRaceId, playerClass.PlayerSexId)))
-                                    .OrderBy(sex => sex.Id).ToArray()))
-                            .OrderBy(race => race.Id).ToArray()))
-                    .OrderBy(rootClass => rootClass.Id).ToArray());
-        }
-        catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
-        {
-            throw new ServerRepositoryException("Character creation option lookup failed.", exception);
         }
     }
 
@@ -135,6 +81,7 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
                 PlayerSexId = (PlayerSexId)character.SexId,
                 BaseClassId = (PlayerClassId)character.ClassId,
                 ActiveClassId = (PlayerClassId)character.ClassId,
+                IsMage = character.IsMage,
                 FaceId = character.FaceId,
                 HairStyleId = character.HairStyleId,
                 HairColorId = character.HairColorId,
@@ -144,8 +91,7 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
             context.Characters.Add(entity);
             await context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            var isMage = await IsMageAsync(context, entity, cancellationToken);
-            return new(true, Character: ToSummary(entity, isMage));
+            return new(true, Character: ToSummary(entity));
         }
         catch (DbUpdateException exception) when (exception.InnerException is PostgresException
             { SqlState: PostgresErrorCodes.UniqueViolation } postgres)
@@ -182,8 +128,7 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
             character.DeleteAfter ??= deleteAfter;
             character.UpdatedAt = now;
             await context.SaveChangesAsync(cancellationToken);
-            return new(true, Character: ToSummary(character,
-                await IsMageAsync(context, character, cancellationToken)));
+            return new(true, Character: ToSummary(character));
         }
         catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
         {
@@ -207,8 +152,7 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
             character.DeleteAfter = null;
             character.UpdatedAt = now;
             await context.SaveChangesAsync(cancellationToken);
-            return new(true, Character: ToSummary(character,
-                await IsMageAsync(context, character, cancellationToken)));
+            return new(true, Character: ToSummary(character));
         }
         catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
         {
@@ -230,8 +174,7 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
             if (character is null) return new(false, "character_not_found");
             if (!allowDeleting && character.DeleteAfter is not null)
                 return new(false, "character_pending_deletion");
-            return new(true, Character: ToSummary(character,
-                await IsMageAsync(context, character, cancellationToken)));
+            return new(true, Character: ToSummary(character));
         }
         catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
         {
@@ -239,7 +182,7 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
         }
     }
 
-    private static PlayerCharacterSummary ToSummary(PlayerCharacter character, bool isMage) => new(
+    private static PlayerCharacterSummary ToSummary(PlayerCharacter character) => new(
         character.Id,
         character.AccountSlot,
         character.Name,
@@ -247,48 +190,11 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
         (int)character.PlayerSexId,
         (int)character.BaseClassId,
         (int)character.ActiveClassId,
-        isMage,
+        character.IsMage,
         character.FaceId,
         character.HairStyleId,
         character.HairColorId,
         character.Level,
         character.Experience,
         character.DeleteAfter);
-
-    private static Task<bool> IsMageAsync(
-        L2ServerDbContext context,
-        PlayerCharacter character,
-        CancellationToken cancellationToken) => context.PlayerClasses.AsNoTracking().AnyAsync(playerClass =>
-            playerClass.Id == character.BaseClassId &&
-            playerClass.PlayerRaceId == character.PlayerRaceId &&
-            playerClass.PlayerSexId == character.PlayerSexId &&
-            playerClass.IsMage,
-            cancellationToken);
-
-    private static AppearanceOption[] Appearance(
-        IEnumerable<PlayerFace> values,
-        PlayerRaceId raceId,
-        PlayerSexId sexId) => values
-        .Where(item => item.PlayerRaceId == raceId && item.PlayerSexId == sexId)
-        .OrderBy(item => item.Id)
-        .Select(item => new AppearanceOption(item.Id, item.Name))
-        .ToArray();
-
-    private static AppearanceOption[] Appearance(
-        IEnumerable<PlayerHairStyle> values,
-        PlayerRaceId raceId,
-        PlayerSexId sexId) => values
-        .Where(item => item.PlayerRaceId == raceId && item.PlayerSexId == sexId)
-        .OrderBy(item => item.Id)
-        .Select(item => new AppearanceOption(item.Id, item.Name))
-        .ToArray();
-
-    private static AppearanceOption[] Appearance(
-        IEnumerable<PlayerHairColor> values,
-        PlayerRaceId raceId,
-        PlayerSexId sexId) => values
-        .Where(item => item.PlayerRaceId == raceId && item.PlayerSexId == sexId)
-        .OrderBy(item => item.Id)
-        .Select(item => new AppearanceOption(item.Id, item.Name))
-        .ToArray();
 }

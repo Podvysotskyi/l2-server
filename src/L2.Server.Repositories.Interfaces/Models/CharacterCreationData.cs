@@ -7,6 +7,7 @@ public sealed record CharacterCreationData(
     int ClassId,
     int RaceId,
     int SexId,
+    bool IsMage,
     int FaceId,
     int HairStyleId,
     int HairColorId,

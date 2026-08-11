@@ -25,6 +25,8 @@ public sealed class PlayerCharacter
     public PlayerClassId BaseClassId { get; set; }
     [Column("active_class_id")]
     public PlayerClassId ActiveClassId { get; set; }
+    [Column("is_mage")]
+    public bool IsMage { get; set; }
     [Column("face_id")]
     public int FaceId { get; set; }
     [Column("hair_style_id")]

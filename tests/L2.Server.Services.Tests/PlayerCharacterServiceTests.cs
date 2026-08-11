@@ -8,12 +8,25 @@ namespace L2.Server.Services.Tests;
 public sealed class PlayerCharacterServiceTests
 {
     private static readonly DateTimeOffset Now = new(2026, 8, 10, 12, 0, 0, TimeSpan.Zero);
+    private static readonly CharacterCreationOptions ValidCreationOptions = new(0,
+    [
+        new RootClassOption(1, "Class", false,
+        [
+            new RaceOption(2, "Human",
+            [
+                new SexOption(3, "Male",
+                    [new AppearanceOption(4, "Face")],
+                    [new AppearanceOption(5, "Hair")],
+                    [new AppearanceOption(6, "Color")])
+            ])
+        ])
+    ]);
 
     [Fact]
     public async Task CreateAsync_rejects_invalid_names_before_persistence()
     {
         var repository = new StubRepository();
-        var service = CreateService(repository);
+        var service = CreateService(repository, new StubCharacterCreationContentProvider());
 
         var result = await service.CreateAsync(Guid.NewGuid(),
             new CharacterCreationRequest("!", 0, 0, 0, 0, 0, 0));
@@ -23,14 +36,20 @@ public sealed class PlayerCharacterServiceTests
         Assert.Null(repository.Created);
     }
 
-    [Fact]
-    public async Task CreateAsync_normalizes_valid_data_and_delegates()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CreateAsync_normalizes_valid_data_and_delegates(bool isMage)
     {
         var repository = new StubRepository
         {
+            CreateResult = new CharacterMutationResult(true)
+        };
+        var creationContentProvider = new StubCharacterCreationContentProvider
+        {
             CreationOptions = new CharacterCreationOptions(0,
             [
-                new RootClassOption(1, "Fighter", false,
+                new RootClassOption(1, "Class", isMage,
                 [
                     new RaceOption(2, "Human",
                     [
@@ -40,10 +59,9 @@ public sealed class PlayerCharacterServiceTests
                             [new AppearanceOption(6, "Color")])
                     ])
                 ])
-            ]),
-            CreateResult = new CharacterMutationResult(true)
+            ])
         };
-        var service = CreateService(repository);
+        var service = CreateService(repository, creationContentProvider);
 
         var result = await service.CreateAsync(Guid.NewGuid(),
             new CharacterCreationRequest(" Hero ", 1, 2, 3, 4, 5, 6));
@@ -52,14 +70,63 @@ public sealed class PlayerCharacterServiceTests
         Assert.NotNull(repository.Created);
         Assert.Equal("Hero", repository.Created.Name);
         Assert.Equal("HERO", repository.Created.NormalizedName);
+        Assert.Equal(isMage, repository.Created.IsMage);
         Assert.Equal(Now, repository.Created.CreatedAt);
+    }
+
+    [Fact]
+    public async Task GetCreationOptionsAsync_applies_configured_character_limit()
+    {
+        var service = CreateService(new StubRepository(), new StubCharacterCreationContentProvider
+        {
+            CreationOptions = ValidCreationOptions
+        });
+
+        var options = await service.GetCreationOptionsAsync();
+
+        Assert.Equal(7, options.MaximumCharacters);
+        Assert.Same(ValidCreationOptions.Classes, options.Classes);
+    }
+
+    [Fact]
+    public async Task CreateAsync_rejects_unknown_class_variant()
+    {
+        var repository = new StubRepository();
+        var service = CreateService(repository, new StubCharacterCreationContentProvider
+        {
+            CreationOptions = ValidCreationOptions
+        });
+
+        var result = await service.CreateAsync(Guid.NewGuid(),
+            new CharacterCreationRequest("Hero", 99, 2, 3, 4, 5, 6));
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("invalid_class_variant", result.ErrorCode);
+        Assert.Null(repository.Created);
+    }
+
+    [Fact]
+    public async Task CreateAsync_rejects_unknown_appearance()
+    {
+        var repository = new StubRepository();
+        var service = CreateService(repository, new StubCharacterCreationContentProvider
+        {
+            CreationOptions = ValidCreationOptions
+        });
+
+        var result = await service.CreateAsync(Guid.NewGuid(),
+            new CharacterCreationRequest("Hero", 1, 2, 3, 99, 5, 6));
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("invalid_appearance", result.ErrorCode);
+        Assert.Null(repository.Created);
     }
 
     [Fact]
     public async Task ScheduleDeletionAsync_calculates_deadline_in_the_service()
     {
         var repository = new StubRepository();
-        var service = CreateService(repository);
+        var service = CreateService(repository, new StubCharacterCreationContentProvider());
 
         await service.ScheduleDeletionAsync(Guid.NewGuid(), Guid.NewGuid());
 
@@ -67,8 +134,11 @@ public sealed class PlayerCharacterServiceTests
         Assert.Equal(Now.AddDays(7), repository.DeleteAfter);
     }
 
-    private static PlayerCharacterService CreateService(StubRepository repository) => new(
+    private static PlayerCharacterService CreateService(
+        StubRepository repository,
+        StubCharacterCreationContentProvider creationContentProvider) => new(
         repository,
+        creationContentProvider,
         Options.Create(new PlayerCharacterOptions
         {
             MaximumCharactersPerAccount = 7,
@@ -85,7 +155,6 @@ public sealed class PlayerCharacterServiceTests
 
     private sealed class StubRepository : IPlayerCharacterRepository
     {
-        public CharacterCreationOptions CreationOptions { get; init; } = new(0, []);
         public CharacterMutationResult CreateResult { get; init; } = new(false);
         public CharacterCreationData? Created { get; private set; }
         public DateTimeOffset? DeleteAfter { get; private set; }
@@ -99,9 +168,6 @@ public sealed class PlayerCharacterServiceTests
             Guid accountId,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<PlayerCharacterSummary>>([]);
-
-        public Task<CharacterCreationOptions> GetCreationOptionsAsync(
-            CancellationToken cancellationToken = default) => Task.FromResult(CreationOptions);
 
         public Task<CharacterMutationResult> CreateAsync(
             CharacterCreationData character,
@@ -135,5 +201,13 @@ public sealed class PlayerCharacterServiceTests
             DateTimeOffset now,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(new CharacterMutationResult(false));
+    }
+
+    private sealed class StubCharacterCreationContentProvider : ICharacterCreationContentProvider
+    {
+        public CharacterCreationOptions CreationOptions { get; init; } = new(0, []);
+
+        public Task<CharacterCreationOptions> GetAsync(
+            CancellationToken cancellationToken = default) => Task.FromResult(CreationOptions);
     }
 }

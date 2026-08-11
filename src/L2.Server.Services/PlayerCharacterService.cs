@@ -8,6 +8,7 @@ namespace L2.Server.Services;
 
 public sealed partial class PlayerCharacterService(
     IPlayerCharacterRepository repository,
+    ICharacterCreationContentProvider creationContentProvider,
     IOptions<PlayerCharacterOptions> options,
     TimeProvider timeProvider) : IPlayerCharacterService
 {
@@ -24,7 +25,7 @@ public sealed partial class PlayerCharacterService(
     public async Task<CharacterCreationOptions> GetCreationOptionsAsync(
         CancellationToken cancellationToken = default)
     {
-        var creationOptions = await repository.GetCreationOptionsAsync(cancellationToken);
+        var creationOptions = await creationContentProvider.GetAsync(cancellationToken);
         return creationOptions with { MaximumCharacters = options.MaximumCharactersPerAccount };
     }
 
@@ -41,7 +42,7 @@ public sealed partial class PlayerCharacterService(
             return new(false, "invalid_name");
         }
 
-        var creationOptions = await repository.GetCreationOptionsAsync(cancellationToken);
+        var creationOptions = await creationContentProvider.GetAsync(cancellationToken);
         var rootClass = creationOptions.Classes.SingleOrDefault(candidate => candidate.Id == request.ClassId);
         var race = rootClass?.AllowedRaces.SingleOrDefault(candidate => candidate.Id == request.RaceId);
         var sex = race?.AllowedSexes.SingleOrDefault(candidate => candidate.Id == request.SexId);
@@ -65,6 +66,7 @@ public sealed partial class PlayerCharacterService(
             request.ClassId,
             request.RaceId,
             request.SexId,
+            rootClass.IsMage,
             request.FaceId,
             request.HairStyleId,
             request.HairColorId,

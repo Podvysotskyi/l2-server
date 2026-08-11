@@ -54,6 +54,7 @@ public static class ServerApplicationConfigurationExtensions
         services.AddSingleton<IGameSessionRepository, GameSessionRepository>();
         services.AddSingleton<IPlayerCharacterRepository, PlayerCharacterRepository>();
         services.AddSingleton<IGameSessionService, GameSessionService>();
+        services.AddSingleton<ICharacterCreationContentProvider, MockCharacterCreationContentProvider>();
         services.AddSingleton<IPlayerCharacterService, PlayerCharacterService>();
     }
 
