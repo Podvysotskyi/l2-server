@@ -62,7 +62,7 @@ The `validate` target restores dependencies, builds the Release solution, and ru
 
 ## Codex skills
 
-When this repository is checked out through `l2-infra`, use `$develop-l2-server-api` for identity, character, session, persistence, migration, and HTTP API work. Use `$develop-l2-game-server` for gameplay WebSocket, connection, protocol, and runtime work. Use both for changes to the ticket exchange, game-session token, selected-character state, or another contract shared by the two hosts.
+When this repository is checked out through `l2-infra`, use `$develop-l2-server` for Login API, Game Server, persistence, migration, protocol, and cross-host session work. The skill preserves the shared authority and contract boundaries between both hosts.
 
 ## Security
 
