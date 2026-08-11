@@ -43,7 +43,7 @@ Repository, service, API, configuration, and Game test projects must remain data
 
 ## Configuration and delivery
 
-Environment-specific settings belong in the matching `appsettings.<Environment>.json` file for each host. Standard ASP.NET Core environment variables may override them. The Compose stack runs Production settings and uses service DNS; development settings use `localhost`.
+Environment-specific settings belong in the matching `appsettings.<Environment>.json` file for each host. Standard ASP.NET Core environment variables may override them. The local Compose stack runs Development settings and uses service DNS; published images default to Production.
 
 Server and Compose workflows validate independently on pull requests and `main`. Only pushed `v*` tags publish GHCR images; manual workflow runs never publish.
 
