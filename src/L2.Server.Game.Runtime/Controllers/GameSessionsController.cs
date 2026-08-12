@@ -1,8 +1,9 @@
 using L2.Server.Contracts;
 using L2.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 
-namespace L2.Server.Api.Controllers;
+namespace L2.Server.Game.Controllers;
 
 [Route("api/game-sessions")]
 public sealed class GameSessionsController(IGameSessionService sessions) : GameControllerBase(sessions)
@@ -27,6 +28,7 @@ public sealed class GameSessionsController(IGameSessionService sessions) : GameC
             issue.Session.AccountId,
             issue.Session.Username,
             issue.Session.GameVersion,
+            issue.Session.GameServer,
             issue.Session.ExpiresAt,
             issue.IdleTimeoutSeconds));
     }

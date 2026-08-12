@@ -5,5 +5,6 @@ public sealed record GameSessionState(
     Guid AccountId,
     string Username,
     string GameVersion,
+    string GameServer,
     Guid? SelectedCharacterId,
     DateTimeOffset ExpiresAt);

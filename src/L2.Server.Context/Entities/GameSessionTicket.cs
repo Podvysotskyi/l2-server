@@ -12,6 +12,8 @@ public sealed class GameSessionTicket
     public Guid AccountSessionId { get; set; }
     [Column("game_version"), MaxLength(32)]
     public required string GameVersion { get; set; }
+    [Column("game_server"), MaxLength(64)]
+    public required string GameServer { get; set; }
     [Column("token_hash")]
     public required byte[] TokenHash { get; set; }
     [Column("created_at")]
@@ -21,5 +23,4 @@ public sealed class GameSessionTicket
     [Column("consumed_at")]
     public DateTimeOffset? ConsumedAt { get; set; }
     public AccountSession AccountSession { get; set; } = null!;
-    public GameVersion Version { get; set; } = null!;
 }

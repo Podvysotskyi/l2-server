@@ -14,6 +14,7 @@ namespace L2.Server.Api.Controllers;
 public sealed class AuthenticationController(
     IAntiforgery antiforgery,
     IPlayerAuthenticationService authentication,
+    IGameVersionRegistry gameVersions,
     IOptions<PlayerSessionCookieOptions> cookieOptions,
     IWebHostEnvironment environment) : ControllerBase
 {
@@ -83,11 +84,22 @@ public sealed class AuthenticationController(
 
     [HttpPost("game-ticket")]
     [EnableRateLimiting("game-ticket")]
-    public async Task<IActionResult> GameTicket(CancellationToken cancellationToken)
+    public async Task<IActionResult> GameTicket(
+        [FromBody] CreateGameTicketRequest request,
+        CancellationToken cancellationToken)
     {
         await antiforgery.ValidateRequestAsync(HttpContext);
+        if (!gameVersions.IsEnabled(request.GameVersion, request.GameServer))
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Game server unavailable",
+                Detail = "Choose an enabled game version and server."
+            });
+        }
         if (!Request.Cookies.TryGetValue(cookieOptions.Value.SessionCookieName, out var token)) return Unauthorized();
-        var ticket = await authentication.CreateGameTicketAsync(token, cancellationToken);
+        var ticket = await authentication.CreateGameTicketAsync(token, request, cancellationToken);
         if (ticket is not null) return Ok(ticket);
         DeleteSessionCookie();
         return Unauthorized();

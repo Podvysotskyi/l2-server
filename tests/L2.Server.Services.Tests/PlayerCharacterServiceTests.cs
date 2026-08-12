@@ -28,7 +28,7 @@ public sealed class PlayerCharacterServiceTests
         var repository = new StubRepository();
         var service = CreateService(repository, new StubCharacterCreationContentProvider());
 
-        var result = await service.CreateAsync(Guid.NewGuid(), "interlude",
+        var result = await service.CreateAsync(Guid.NewGuid(), "interlude", "default",
             new CharacterCreationRequest("!", 0, 0, 0, 0, 0, 0));
 
         Assert.False(result.Succeeded);
@@ -63,7 +63,7 @@ public sealed class PlayerCharacterServiceTests
         };
         var service = CreateService(repository, creationContentProvider);
 
-        var result = await service.CreateAsync(Guid.NewGuid(), "interlude",
+        var result = await service.CreateAsync(Guid.NewGuid(), "interlude", "default",
             new CharacterCreationRequest(" Hero ", 1, 2, 3, 4, 5, 6));
 
         Assert.True(result.Succeeded);
@@ -97,7 +97,7 @@ public sealed class PlayerCharacterServiceTests
             CreationOptions = ValidCreationOptions
         });
 
-        var result = await service.CreateAsync(Guid.NewGuid(), "interlude",
+        var result = await service.CreateAsync(Guid.NewGuid(), "interlude", "default",
             new CharacterCreationRequest("Hero", 99, 2, 3, 4, 5, 6));
 
         Assert.False(result.Succeeded);
@@ -114,7 +114,7 @@ public sealed class PlayerCharacterServiceTests
             CreationOptions = ValidCreationOptions
         });
 
-        var result = await service.CreateAsync(Guid.NewGuid(), "interlude",
+        var result = await service.CreateAsync(Guid.NewGuid(), "interlude", "default",
             new CharacterCreationRequest("Hero", 1, 2, 3, 99, 5, 6));
 
         Assert.False(result.Succeeded);
@@ -128,7 +128,7 @@ public sealed class PlayerCharacterServiceTests
         var repository = new StubRepository();
         var service = CreateService(repository, new StubCharacterCreationContentProvider());
 
-        await service.ScheduleDeletionAsync(Guid.NewGuid(), "interlude", Guid.NewGuid());
+        await service.ScheduleDeletionAsync(Guid.NewGuid(), "interlude", "default", Guid.NewGuid());
 
         Assert.Equal(Now, repository.DeletionNow);
         Assert.Equal(Now.AddDays(7), repository.DeleteAfter);
@@ -167,6 +167,7 @@ public sealed class PlayerCharacterServiceTests
         public Task<IReadOnlyList<PlayerCharacterSummary>> ListAsync(
             Guid accountId,
             string gameVersion,
+            string gameServer,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<PlayerCharacterSummary>>([]);
 
@@ -181,6 +182,7 @@ public sealed class PlayerCharacterServiceTests
         public Task<CharacterMutationResult> SelectAsync(
             Guid accountId,
             string gameVersion,
+            string gameServer,
             Guid characterId,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(new CharacterMutationResult(false));
@@ -188,6 +190,7 @@ public sealed class PlayerCharacterServiceTests
         public Task<CharacterMutationResult> ScheduleDeletionAsync(
             Guid accountId,
             string gameVersion,
+            string gameServer,
             Guid characterId,
             DateTimeOffset deleteAfter,
             DateTimeOffset now,
@@ -201,6 +204,7 @@ public sealed class PlayerCharacterServiceTests
         public Task<CharacterMutationResult> RestoreAsync(
             Guid accountId,
             string gameVersion,
+            string gameServer,
             Guid characterId,
             DateTimeOffset now,
             CancellationToken cancellationToken = default) =>

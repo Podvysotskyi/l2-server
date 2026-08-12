@@ -5,6 +5,8 @@ using L2.Server.Configurations;
 using L2.Server.Contracts;
 using L2.Server.Services.Interfaces;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 
 namespace L2.Server.Game.Sessions;
 
@@ -84,6 +86,7 @@ public sealed class GameSessionConnectionHandler(
         var selected = await characters.SelectAsync(
             session.AccountId,
             session.GameVersion,
+            session.GameServer,
             characterId,
             context.RequestAborted);
         if (selected is not { Succeeded: true, Character: not null })
@@ -97,6 +100,7 @@ public sealed class GameSessionConnectionHandler(
             session.AccountId,
             session.Username,
             session.GameVersion,
+            session.GameServer,
             selected.Character,
             options.Value.ProtocolVersion,
             identity.BuildVersion,

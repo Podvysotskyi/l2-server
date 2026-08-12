@@ -29,8 +29,8 @@ docker compose up --build postgres redis api-server game-server
 
 ## Architecture
 
-- `L2.Server.Api` owns controllers, action-filter validation, authentication, and HTTP composition. Keep controllers thin.
-- `L2.Server.Game` owns runtime-host and WebSocket composition. Gameplay protocol handling must delegate authoritative decisions to Server services.
+- `L2.Server.Api` owns account authentication, version/world discovery, health aggregation, ticket issuance, action-filter validation, and HTTP composition. Keep controllers thin.
+- `L2.Server.Game.Runtime` owns shared Game HTTP, character, and WebSocket composition. `L2.Server.Game.C1`, `L2.Server.Game.C4`, and `L2.Server.Game.Interlude` are thin version-fixed hosts; deployment configuration supplies the world key.
 - `L2.Server.Configurations` owns dependency registration, persistence wiring, migration hosting, service identity, and process-level health endpoints.
 - `L2.Server.Contracts` groups Server-boundary DTOs by type under `Models`, `Requests`, and `Responses`.
 - `L2.Server.Context` owns EF Core entities, identifiers, and the single `L2ServerDbContext`. Entity classes own scalar schema metadata through data annotations; Fluent configuration is limited to relationships, indexes, composite keys, and check constraints.

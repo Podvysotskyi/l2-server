@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>L2.Server.Game.C1</AssemblyName>
+    <RootNamespace>L2.Server.Game.C1</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../L2.Server.Game.Runtime/L2.Server.Game.Runtime.csproj" />
+  </ItemGroup>
+</Project>

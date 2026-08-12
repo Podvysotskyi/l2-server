@@ -1,6 +1,9 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/L2.Server.Game/L2.Server.Game.csproj" />
+    <Project Path="src/L2.Server.Game.Runtime/L2.Server.Game.Runtime.csproj" />
+    <Project Path="src/L2.Server.Game.C1/L2.Server.Game.C1.csproj" />
+    <Project Path="src/L2.Server.Game.C4/L2.Server.Game.C4.csproj" />
+    <Project Path="src/L2.Server.Game.Interlude/L2.Server.Game.Interlude.csproj" />
     <Project Path="src/L2.Server.Api/L2.Server.Api.csproj" />
     <Project Path="src/L2.Server.Contracts/L2.Server.Contracts.csproj" />
     <Project Path="src/L2.Server.Context/L2.Server.Context.csproj" />

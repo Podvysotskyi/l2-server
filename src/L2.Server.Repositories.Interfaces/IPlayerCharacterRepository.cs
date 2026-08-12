@@ -10,6 +10,7 @@ public interface IPlayerCharacterRepository
     Task<IReadOnlyList<PlayerCharacterSummary>> ListAsync(
         Guid accountId,
         string gameVersion,
+        string gameServer,
         CancellationToken cancellationToken = default);
     Task<CharacterMutationResult> CreateAsync(
         CharacterCreationData character,
@@ -17,11 +18,13 @@ public interface IPlayerCharacterRepository
     Task<CharacterMutationResult> SelectAsync(
         Guid accountId,
         string gameVersion,
+        string gameServer,
         Guid characterId,
         CancellationToken cancellationToken = default);
     Task<CharacterMutationResult> ScheduleDeletionAsync(
         Guid accountId,
         string gameVersion,
+        string gameServer,
         Guid characterId,
         DateTimeOffset deleteAfter,
         DateTimeOffset now,
@@ -29,6 +32,7 @@ public interface IPlayerCharacterRepository
     Task<CharacterMutationResult> RestoreAsync(
         Guid accountId,
         string gameVersion,
+        string gameServer,
         Guid characterId,
         DateTimeOffset now,
         CancellationToken cancellationToken = default);

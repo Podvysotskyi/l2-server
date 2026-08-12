@@ -70,10 +70,18 @@ jobs:
             target: api-production
             image: ghcr.io/podvysotskyi/l2-server-api
             cache: l2-server-api
-          - name: Game Server
-            target: game-production
-            image: ghcr.io/podvysotskyi/l2-game-server
-            cache: l2-game-server
+          - name: Chronicle 1 Game Server
+            target: game-c1-production
+            image: ghcr.io/podvysotskyi/l2-game-server-c1
+            cache: l2-game-server-c1
+          - name: Chronicle 4 Game Server
+            target: game-c4-production
+            image: ghcr.io/podvysotskyi/l2-game-server-c4
+            cache: l2-game-server-c4
+          - name: Interlude Game Server
+            target: game-interlude-production
+            image: ghcr.io/podvysotskyi/l2-game-server-interlude
+            cache: l2-game-server-interlude
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6

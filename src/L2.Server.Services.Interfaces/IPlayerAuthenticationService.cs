@@ -12,5 +12,8 @@ public interface IPlayerAuthenticationService
         CancellationToken cancellationToken);
     Task<AuthenticationSessionLookup?> FindSessionAsync(string token, CancellationToken cancellationToken);
     Task LogoutAsync(string token, CancellationToken cancellationToken);
-    Task<GameTicketIssue?> CreateGameTicketAsync(string sessionToken, CancellationToken cancellationToken);
+    Task<GameTicketIssue?> CreateGameTicketAsync(
+        string sessionToken,
+        CreateGameTicketRequest request,
+        CancellationToken cancellationToken);
 }

@@ -12,6 +12,8 @@ public sealed class GameSessionRepository(IDbContextFactory<L2ServerDbContext> c
     public async Task<GameSessionRecord?> RedeemAsync(
         byte[] ticketTokenHash,
         byte[] accessTokenHash,
+        string gameVersion,
+        string gameServer,
         Guid sessionId,
         DateTimeOffset now,
         CancellationToken cancellationToken)
@@ -25,6 +27,7 @@ public sealed class GameSessionRepository(IDbContextFactory<L2ServerDbContext> c
                 .ThenInclude(accountSession => accountSession.Account)
                 .SingleOrDefaultAsync(candidate =>
                     candidate.TokenHash.SequenceEqual(ticketTokenHash) && candidate.ConsumedAt == null &&
+                    candidate.GameVersion == gameVersion && candidate.GameServer == gameServer &&
                     candidate.ExpiresAt > now && candidate.AccountSession.RevokedAt == null &&
                     candidate.AccountSession.ExpiresAt > now, cancellationToken);
             if (pendingTicket is null)
@@ -39,6 +42,7 @@ public sealed class GameSessionRepository(IDbContextFactory<L2ServerDbContext> c
                 Id = sessionId,
                 AccountSessionId = pendingTicket.AccountSessionId,
                 GameVersion = pendingTicket.GameVersion,
+                GameServer = pendingTicket.GameServer,
                 AccessTokenHash = accessTokenHash,
                 CreatedAt = now,
                 LastSeenAt = now,
@@ -48,7 +52,8 @@ public sealed class GameSessionRepository(IDbContextFactory<L2ServerDbContext> c
             await context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return new GameSessionRecord(gameSession.Id, pendingTicket.AccountSession.AccountId,
-                pendingTicket.AccountSession.Account.Username, gameSession.GameVersion, null, gameSession.ExpiresAt);
+                pendingTicket.AccountSession.Account.Username, gameSession.GameVersion, gameSession.GameServer,
+                null, gameSession.ExpiresAt);
         }
         catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
         {
@@ -58,6 +63,8 @@ public sealed class GameSessionRepository(IDbContextFactory<L2ServerDbContext> c
 
     public async Task<GameSessionRecord?> FindActiveAsync(
         byte[] accessTokenHash,
+        string gameVersion,
+        string gameServer,
         DateTimeOffset now,
         DateTimeOffset idleCutoff,
         CancellationToken cancellationToken)
@@ -69,6 +76,7 @@ public sealed class GameSessionRepository(IDbContextFactory<L2ServerDbContext> c
                 .Include(candidate => candidate.AccountSession)
                 .ThenInclude(accountSession => accountSession.Account)
                 .SingleOrDefaultAsync(candidate => candidate.AccessTokenHash.SequenceEqual(accessTokenHash) &&
+                    candidate.GameVersion == gameVersion && candidate.GameServer == gameServer &&
                     candidate.RevokedAt == null &&
                     candidate.ExpiresAt > now && candidate.LastSeenAt > idleCutoff &&
                     candidate.AccountSession.RevokedAt == null && candidate.AccountSession.ExpiresAt > now,
@@ -80,7 +88,8 @@ public sealed class GameSessionRepository(IDbContextFactory<L2ServerDbContext> c
                 await context.SaveChangesAsync(cancellationToken);
             }
             return new GameSessionRecord(session.Id, session.AccountSession.AccountId,
-                session.AccountSession.Account.Username, session.GameVersion, session.SelectedCharacterId, session.ExpiresAt);
+                session.AccountSession.Account.Username, session.GameVersion, session.GameServer,
+                session.SelectedCharacterId, session.ExpiresAt);
         }
         catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
         {

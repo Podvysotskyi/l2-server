@@ -10,4 +10,11 @@ public sealed class GameVersionsController(IGameVersionRegistry versions) : Cont
 {
     [HttpGet]
     public ActionResult<IReadOnlyList<GameVersionSummary>> List() => Ok(versions.GetEnabled());
+
+    [HttpGet("{gameVersion}/servers")]
+    public async Task<IActionResult> Servers(string gameVersion, CancellationToken cancellationToken)
+    {
+        var servers = await versions.GetServersAsync(gameVersion, cancellationToken);
+        return servers is null ? NotFound() : Ok(servers);
+    }
 }

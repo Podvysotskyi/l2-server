@@ -53,6 +53,7 @@ public sealed class GameSessionConnectionHandlerTests
         public Task<IReadOnlyList<PlayerCharacterSummary>> ListAsync(
             Guid accountId,
             string gameVersion,
+            string gameServer,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<PlayerCharacterSummary>>([]);
 
@@ -64,24 +65,28 @@ public sealed class GameSessionConnectionHandlerTests
         public Task<CharacterOperationResult> CreateAsync(
             Guid accountId,
             string gameVersion,
+            string gameServer,
             CharacterCreationRequest request,
             CancellationToken cancellationToken = default) => Task.FromResult(new CharacterOperationResult(false));
 
         public Task<CharacterOperationResult> SelectAsync(
             Guid accountId,
             string gameVersion,
+            string gameServer,
             Guid characterId,
             CancellationToken cancellationToken = default) => Task.FromResult(new CharacterOperationResult(false));
 
         public Task<CharacterOperationResult> ScheduleDeletionAsync(
             Guid accountId,
             string gameVersion,
+            string gameServer,
             Guid characterId,
             CancellationToken cancellationToken = default) => Task.FromResult(new CharacterOperationResult(false));
 
         public Task<CharacterOperationResult> RestoreAsync(
             Guid accountId,
             string gameVersion,
+            string gameServer,
             Guid characterId,
             CancellationToken cancellationToken = default) => Task.FromResult(new CharacterOperationResult(false));
     }

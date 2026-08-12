@@ -2,6 +2,7 @@ using L2.Server.Repositories;
 using L2.Server.Repositories.Interfaces;
 using L2.Server.Services;
 using L2.Server.Services.Interfaces;
+using L2.Server.Context.Identifiers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +17,7 @@ public static class ServerApplicationConfigurationExtensions
     {
         services.AddServerPersistence(configuration);
         services.AddGameConnectionOptions(configuration);
+        services.AddGameVersionRegistry(configuration);
         services.AddGameServices(configuration);
         return services;
     }
@@ -26,24 +28,41 @@ public static class ServerApplicationConfigurationExtensions
     {
         services.AddServerPersistence(configuration);
         services.AddServerApiSecurity(configuration);
-        services.AddGameConnectionOptions(configuration);
+        services.AddGameVersionRegistry(configuration);
         services.AddAuthenticationServices(configuration);
-        services.AddGameServices(configuration);
         return services;
     }
 
-    private static void AddGameServices(this IServiceCollection services, IConfiguration configuration)
+    private static void AddGameVersionRegistry(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
-        services.TryAddTimeProvider();
         services.AddOptions<GameVersionOptions>()
             .Bind(configuration.GetSection(GameVersionOptions.SectionName))
             .Validate(options => options.Enabled.Count > 0, "At least one game version must be enabled.")
             .Validate(options => options.Enabled.Select(version => version.Key).Distinct(StringComparer.OrdinalIgnoreCase).Count() == options.Enabled.Count,
                 "Game version keys must be unique.")
+            .Validate(options => GameVersionIdentifiers.IsKnown(options.Default),
+                "The default game version must be a known game version.")
+            .Validate(options => options.Enabled.All(version => GameVersionIdentifiers.IsKnown(version.Key)),
+                "Enabled game versions must be known game versions.")
             .Validate(options => options.Enabled.Any(version => string.Equals(version.Key, options.Default, StringComparison.OrdinalIgnoreCase)),
                 "The default game version must be enabled.")
+            .Validate(options => options.Enabled.All(version => version.Servers.Count > 0),
+                "Every game version must expose at least one server.")
+            .Validate(options => options.Enabled.All(version =>
+                version.Servers.Select(server => server.Key).Distinct(StringComparer.OrdinalIgnoreCase).Count() == version.Servers.Count),
+                "Game server keys must be unique within a version.")
+            .Validate(options => options.Enabled.All(version => version.Servers.Count(server => server.IsDefault) == 1),
+                "Every game version must expose exactly one default server.")
             .ValidateOnStart();
+        services.AddMemoryCache();
         services.AddSingleton<IGameVersionRegistry, GameVersionRegistry>();
+    }
+
+    private static void AddGameServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.TryAddTimeProvider();
         services.AddOptions<GameSessionOptions>()
             .Bind(configuration.GetSection(GameSessionOptions.SectionName))
             .Validate(options => options.IdleTimeoutMinutes > 0,

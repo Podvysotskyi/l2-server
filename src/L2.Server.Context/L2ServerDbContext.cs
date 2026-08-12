@@ -8,7 +8,6 @@ public sealed class L2ServerDbContext(DbContextOptions<L2ServerDbContext> option
     public const string SchemaName = "public";
 
     public DbSet<Account> Accounts => Set<Account>();
-    public DbSet<GameVersion> GameVersions => Set<GameVersion>();
     public DbSet<AccountCredential> AccountCredentials => Set<AccountCredential>();
     public DbSet<AccountSession> AccountSessions => Set<AccountSession>();
     public DbSet<AccountLoginHistory> AccountLoginHistory => Set<AccountLoginHistory>();
@@ -19,20 +18,8 @@ public sealed class L2ServerDbContext(DbContextOptions<L2ServerDbContext> option
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(SchemaName);
-        ConfigureGameVersions(modelBuilder);
         ConfigurePlayerIdentity(modelBuilder);
         ConfigurePlayerCharacters(modelBuilder);
-    }
-
-    private static void ConfigureGameVersions(ModelBuilder modelBuilder)
-    {
-        var version = modelBuilder.Entity<GameVersion>();
-        version.HasIndex(entity => entity.DisplayName).IsUnique()
-            .HasDatabaseName("ix_game_versions_display_name");
-        version.HasData(
-            new GameVersion { Key = "c1", DisplayName = "Chronicle 1", SortOrder = 10 },
-            new GameVersion { Key = "c4", DisplayName = "Chronicle 4", SortOrder = 20 },
-            new GameVersion { Key = "interlude", DisplayName = "Interlude", SortOrder = 30 });
     }
 
     private static void ConfigurePlayerIdentity(ModelBuilder modelBuilder)
@@ -56,8 +43,6 @@ public sealed class L2ServerDbContext(DbContextOptions<L2ServerDbContext> option
             .WithMany(entity => entity.Sessions)
             .HasForeignKey(entity => entity.AccountId)
             .OnDelete(DeleteBehavior.Cascade);
-        session.HasOne(entity => entity.Version).WithMany()
-            .HasForeignKey(entity => entity.GameVersion).OnDelete(DeleteBehavior.Restrict);
 
         var history = modelBuilder.Entity<AccountLoginHistory>();
         history.HasIndex(entity => new { entity.AccountId, entity.OccurredAt })
@@ -67,8 +52,6 @@ public sealed class L2ServerDbContext(DbContextOptions<L2ServerDbContext> option
             .WithMany(entity => entity.LoginHistory)
             .HasForeignKey(entity => entity.AccountId)
             .OnDelete(DeleteBehavior.SetNull);
-        history.HasOne(entity => entity.Version).WithMany()
-            .HasForeignKey(entity => entity.GameVersion).OnDelete(DeleteBehavior.Restrict);
 
         var ticket = modelBuilder.Entity<GameSessionTicket>();
         ticket.HasIndex(entity => entity.TokenHash).IsUnique().HasDatabaseName("ix_game_session_tickets_token_hash");
@@ -77,24 +60,24 @@ public sealed class L2ServerDbContext(DbContextOptions<L2ServerDbContext> option
         ticket.HasIndex(entity => entity.ExpiresAt)
             .HasFilter("consumed_at IS NULL")
             .HasDatabaseName("ix_game_session_tickets_pending_expiry");
+        ticket.HasIndex(entity => entity.GameVersion)
+            .HasDatabaseName("IX_game_session_tickets_game_version");
         ticket.HasOne(entity => entity.AccountSession)
             .WithMany(entity => entity.GameTickets)
             .HasForeignKey(entity => entity.AccountSessionId)
             .OnDelete(DeleteBehavior.Cascade);
-        ticket.HasOne(entity => entity.Version).WithMany()
-            .HasForeignKey(entity => entity.GameVersion).OnDelete(DeleteBehavior.Restrict);
 
         var gameSession = modelBuilder.Entity<GameSession>();
         gameSession.HasOne(entity => entity.AccountSession)
             .WithMany(entity => entity.GameSessions)
             .HasForeignKey(entity => entity.AccountSessionId)
             .OnDelete(DeleteBehavior.Cascade);
-        gameSession.HasOne(entity => entity.Version).WithMany()
-            .HasForeignKey(entity => entity.GameVersion).OnDelete(DeleteBehavior.Restrict);
         gameSession.HasIndex(entity => entity.AccountSessionId)
             .HasDatabaseName("ix_game_sessions_account_session_id");
         gameSession.HasIndex(entity => entity.AccessTokenHash).IsUnique()
             .HasDatabaseName("ix_game_sessions_access_token_hash");
+        gameSession.HasIndex(entity => entity.GameVersion)
+            .HasDatabaseName("IX_game_sessions_game_version");
         gameSession.HasIndex(entity => new { entity.RevokedAt, entity.ExpiresAt })
             .HasDatabaseName("ix_game_sessions_active_expiry");
     }
@@ -108,13 +91,11 @@ public sealed class L2ServerDbContext(DbContextOptions<L2ServerDbContext> option
             table.HasCheckConstraint("ck_characters_experience", "experience >= 0");
             table.HasCheckConstraint("ck_characters_account_slot", "account_slot >= 0");
         });
-        character.HasOne(entity => entity.Version).WithMany()
-            .HasForeignKey(entity => entity.GameVersion).OnDelete(DeleteBehavior.Restrict);
-        character.HasIndex(entity => new { entity.GameVersion, entity.NormalizedName }).IsUnique()
+        character.HasIndex(entity => new { entity.GameVersion, entity.GameServer, entity.NormalizedName }).IsUnique()
             .HasDatabaseName("ix_characters_normalized_name");
-        character.HasIndex(entity => new { entity.GameVersion, entity.AccountId, entity.AccountSlot }).IsUnique()
+        character.HasIndex(entity => new { entity.GameVersion, entity.GameServer, entity.AccountId, entity.AccountSlot }).IsUnique()
             .HasDatabaseName("ix_characters_account_slot");
-        character.HasIndex(entity => new { entity.GameVersion, entity.AccountId, entity.CreatedAt })
+        character.HasIndex(entity => new { entity.GameVersion, entity.GameServer, entity.AccountId, entity.CreatedAt })
             .HasDatabaseName("ix_characters_account_created");
         character.HasIndex(entity => entity.DeleteAfter)
             .HasFilter("delete_after IS NOT NULL")

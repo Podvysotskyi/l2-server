@@ -5,11 +5,15 @@ public interface IGameSessionRepository
     Task<GameSessionRecord?> RedeemAsync(
         byte[] ticketTokenHash,
         byte[] accessTokenHash,
+        string gameVersion,
+        string gameServer,
         Guid sessionId,
         DateTimeOffset now,
         CancellationToken cancellationToken);
     Task<GameSessionRecord?> FindActiveAsync(
         byte[] accessTokenHash,
+        string gameVersion,
+        string gameServer,
         DateTimeOffset now,
         DateTimeOffset idleCutoff,
         CancellationToken cancellationToken);

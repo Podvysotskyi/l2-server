@@ -57,12 +57,36 @@ services:
     healthcheck: *server-healthcheck
     restart: unless-stopped
 
-  game-server:
+  game-interlude-default:
     build:
       context: .
-      target: game-production
+      target: game-interlude-production
     environment: *dotnet-environment
     ports: ['127.0.0.1:5002:8080']
+    depends_on:
+      api-server:
+        condition: service_healthy
+    healthcheck: *server-healthcheck
+    restart: unless-stopped
+
+  game-c1-default:
+    build:
+      context: .
+      target: game-c1-production
+    environment: *dotnet-environment
+    ports: ['127.0.0.1:5003:8080']
+    depends_on:
+      api-server:
+        condition: service_healthy
+    healthcheck: *server-healthcheck
+    restart: unless-stopped
+
+  game-c4-default:
+    build:
+      context: .
+      target: game-c4-production
+    environment: *dotnet-environment
+    ports: ['127.0.0.1:5004:8080']
     depends_on:
       api-server:
         condition: service_healthy

@@ -61,8 +61,6 @@ public sealed class PlayerAuthenticationService : IPlayerAuthenticationService
         string? userAgent,
         CancellationToken cancellationToken)
     {
-        var gameVersion = request.GameVersion.Trim().ToLowerInvariant();
-        if (!gameVersions.IsEnabled(gameVersion)) return null;
         var normalizedEmail = CredentialNormalizer.Email(request.Email);
         var credential = await repository.FindCredentialAsync(normalizedEmail, cancellationToken);
         var verification = credential is null
@@ -75,7 +73,7 @@ public sealed class PlayerAuthenticationService : IPlayerAuthenticationService
         var now = timeProvider.GetUtcNow();
         if (credential is null || verification == PasswordVerificationResult.Failed)
         {
-            await repository.RecordFailedLoginAsync(credential?.AccountId, normalizedEmail, gameVersion,
+            await repository.RecordFailedLoginAsync(credential?.AccountId, normalizedEmail,
                 new RequestMetadata(ipAddress, userAgent), now, cancellationToken);
             return null;
         }
@@ -88,7 +86,6 @@ public sealed class PlayerAuthenticationService : IPlayerAuthenticationService
         await repository.CreateLoginSessionAsync(
             credential,
             normalizedEmail,
-            gameVersion,
             replacementHash,
             OpaqueToken.Hash(token),
             now,
@@ -98,7 +95,6 @@ public sealed class PlayerAuthenticationService : IPlayerAuthenticationService
         return new AuthenticationIssue(new AuthenticationSession(
             credential.AccountId,
             credential.Username,
-            gameVersion,
             expiresAt), token);
     }
 
@@ -117,18 +113,26 @@ public sealed class PlayerAuthenticationService : IPlayerAuthenticationService
     public Task LogoutAsync(string token, CancellationToken cancellationToken) =>
         repository.RevokeSessionAsync(OpaqueToken.Hash(token), timeProvider.GetUtcNow(), cancellationToken);
 
-    public async Task<GameTicketIssue?> CreateGameTicketAsync(string sessionToken, CancellationToken cancellationToken)
+    public async Task<GameTicketIssue?> CreateGameTicketAsync(
+        string sessionToken,
+        CreateGameTicketRequest request,
+        CancellationToken cancellationToken)
     {
+        var gameVersion = request.GameVersion.Trim().ToLowerInvariant();
+        var gameServer = request.GameServer.Trim().ToLowerInvariant();
+        if (!gameVersions.IsEnabled(gameVersion, gameServer)) return null;
         var ticket = OpaqueToken.Create();
         var now = timeProvider.GetUtcNow();
         var expiresAt = now.Add(gameTicketLifetime);
         var created = await repository.CreateGameTicketAsync(
             OpaqueToken.Hash(sessionToken),
             OpaqueToken.Hash(ticket),
+            gameVersion,
+            gameServer,
             now,
             expiresAt,
             cancellationToken);
-        return created ? new GameTicketIssue(ticket, expiresAt) : null;
+        return created ? new GameTicketIssue(ticket, expiresAt, gameVersion, gameServer) : null;
     }
 
     private static string CreateToken() => OpaqueToken.Create();

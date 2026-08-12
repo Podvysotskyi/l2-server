@@ -32,13 +32,15 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
     public async Task<IReadOnlyList<PlayerCharacterSummary>> ListAsync(
         Guid accountId,
         string gameVersion,
+        string gameServer,
         CancellationToken cancellationToken = default)
     {
         try
         {
             await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
             var characters = await context.Characters.AsNoTracking()
-                .Where(character => character.AccountId == accountId && character.GameVersion == gameVersion)
+                .Where(character => character.AccountId == accountId && character.GameVersion == gameVersion &&
+                    character.GameServer == gameServer)
                 .OrderBy(character => character.AccountSlot)
                 .ToListAsync(cancellationToken);
             return characters.Select(ToSummary).ToArray();
@@ -62,7 +64,7 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
                 $"SELECT pg_advisory_xact_lock({accountLock})", cancellationToken);
             var usedSlots = await context.Characters
                 .Where(existing => existing.AccountId == character.AccountId &&
-                    existing.GameVersion == character.GameVersion)
+                    existing.GameVersion == character.GameVersion && existing.GameServer == character.GameServer)
                 .Select(existing => existing.AccountSlot)
                 .ToListAsync(cancellationToken);
             var slot = Enumerable.Range(0, character.MaximumCharacters)
@@ -77,6 +79,7 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
                 Id = Guid.NewGuid(),
                 AccountId = character.AccountId,
                 GameVersion = character.GameVersion,
+                GameServer = character.GameServer,
                 AccountSlot = slot,
                 Name = character.Name,
                 NormalizedName = character.NormalizedName,
@@ -112,13 +115,15 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
     public async Task<CharacterMutationResult> SelectAsync(
         Guid accountId,
         string gameVersion,
+        string gameServer,
         Guid characterId,
         CancellationToken cancellationToken = default) =>
-        await FindOwnedAsync(accountId, gameVersion, characterId, false, cancellationToken);
+        await FindOwnedAsync(accountId, gameVersion, gameServer, characterId, false, cancellationToken);
 
     public async Task<CharacterMutationResult> ScheduleDeletionAsync(
         Guid accountId,
         string gameVersion,
+        string gameServer,
         Guid characterId,
         DateTimeOffset deleteAfter,
         DateTimeOffset now,
@@ -129,7 +134,7 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
             await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
             var character = await context.Characters.SingleOrDefaultAsync(existing =>
                 existing.Id == characterId && existing.AccountId == accountId &&
-                existing.GameVersion == gameVersion, cancellationToken);
+                existing.GameVersion == gameVersion && existing.GameServer == gameServer, cancellationToken);
             if (character is null) return new(false, "character_not_found");
             character.DeleteAfter ??= deleteAfter;
             character.UpdatedAt = now;
@@ -145,6 +150,7 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
     public async Task<CharacterMutationResult> RestoreAsync(
         Guid accountId,
         string gameVersion,
+        string gameServer,
         Guid characterId,
         DateTimeOffset now,
         CancellationToken cancellationToken = default)
@@ -154,7 +160,7 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
             await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
             var character = await context.Characters.SingleOrDefaultAsync(existing =>
                 existing.Id == characterId && existing.AccountId == accountId &&
-                existing.GameVersion == gameVersion, cancellationToken);
+                existing.GameVersion == gameVersion && existing.GameServer == gameServer, cancellationToken);
             if (character is null) return new(false, "character_not_found");
             if (character.DeleteAfter <= now) return new(false, "deletion_expired");
             character.DeleteAfter = null;
@@ -171,6 +177,7 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
     private async Task<CharacterMutationResult> FindOwnedAsync(
         Guid accountId,
         string gameVersion,
+        string gameServer,
         Guid characterId,
         bool allowDeleting,
         CancellationToken cancellationToken)
@@ -180,7 +187,7 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
             await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
             var character = await context.Characters.AsNoTracking().SingleOrDefaultAsync(existing =>
                 existing.Id == characterId && existing.AccountId == accountId &&
-                existing.GameVersion == gameVersion, cancellationToken);
+                existing.GameVersion == gameVersion && existing.GameServer == gameServer, cancellationToken);
             if (character is null) return new(false, "character_not_found");
             if (!allowDeleting && character.DeleteAfter is not null)
                 return new(false, "character_pending_deletion");
@@ -197,6 +204,7 @@ public sealed class PlayerCharacterRepository(IDbContextFactory<L2ServerDbContex
         character.AccountSlot,
         character.Name,
         character.GameVersion,
+        character.GameServer,
         (int)character.PlayerRaceId,
         (int)character.PlayerSexId,
         (int)character.BaseClassId,

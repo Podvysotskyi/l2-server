@@ -3,6 +3,7 @@ namespace L2.Server.Repositories.Interfaces;
 public sealed record CharacterCreationData(
     Guid AccountId,
     string GameVersion,
+    string GameServer,
     string Name,
     string NormalizedName,
     int ClassId,

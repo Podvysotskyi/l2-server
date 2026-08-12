@@ -17,10 +17,11 @@ public sealed partial class PlayerCharacterService(
     public async Task<IReadOnlyList<PlayerCharacterSummary>> ListAsync(
         Guid accountId,
         string gameVersion,
+        string gameServer,
         CancellationToken cancellationToken = default)
     {
         await repository.CleanupExpiredAsync(timeProvider.GetUtcNow(), cancellationToken);
-        return await repository.ListAsync(accountId, gameVersion, cancellationToken);
+        return await repository.ListAsync(accountId, gameVersion, gameServer, cancellationToken);
     }
 
     public async Task<CharacterCreationOptions> GetCreationOptionsAsync(
@@ -34,6 +35,7 @@ public sealed partial class PlayerCharacterService(
     public async Task<CharacterOperationResult> CreateAsync(
         Guid accountId,
         string gameVersion,
+        string gameServer,
         CharacterCreationRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -65,6 +67,7 @@ public sealed partial class PlayerCharacterService(
         return ToResult(await repository.CreateAsync(new CharacterCreationData(
             accountId,
             gameVersion,
+            gameServer,
             name,
             name.ToUpperInvariant(),
             request.ClassId,
@@ -81,13 +84,15 @@ public sealed partial class PlayerCharacterService(
     public async Task<CharacterOperationResult> SelectAsync(
         Guid accountId,
         string gameVersion,
+        string gameServer,
         Guid characterId,
         CancellationToken cancellationToken = default) =>
-        ToResult(await repository.SelectAsync(accountId, gameVersion, characterId, cancellationToken));
+        ToResult(await repository.SelectAsync(accountId, gameVersion, gameServer, characterId, cancellationToken));
 
     public async Task<CharacterOperationResult> ScheduleDeletionAsync(
         Guid accountId,
         string gameVersion,
+        string gameServer,
         Guid characterId,
         CancellationToken cancellationToken = default)
     {
@@ -95,6 +100,7 @@ public sealed partial class PlayerCharacterService(
         return ToResult(await repository.ScheduleDeletionAsync(
             accountId,
             gameVersion,
+            gameServer,
             characterId,
             now.AddDays(options.DeletionDelayDays),
             now,
@@ -104,11 +110,13 @@ public sealed partial class PlayerCharacterService(
     public async Task<CharacterOperationResult> RestoreAsync(
         Guid accountId,
         string gameVersion,
+        string gameServer,
         Guid characterId,
         CancellationToken cancellationToken = default) =>
         ToResult(await repository.RestoreAsync(
             accountId,
             gameVersion,
+            gameServer,
             characterId,
             timeProvider.GetUtcNow(),
             cancellationToken));

@@ -1,9 +1,9 @@
-using L2.Server.Api.Controllers;
+using L2.Server.Game.Controllers;
 using L2.Server.Contracts;
 using L2.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
-namespace L2.Server.Api.Tests;
+namespace L2.Server.Game.Tests;
 
 public sealed class GameSessionsControllerTests
 {

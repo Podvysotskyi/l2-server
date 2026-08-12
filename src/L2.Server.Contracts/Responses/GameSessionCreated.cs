@@ -5,5 +5,6 @@ public sealed record GameSessionCreated(
     Guid AccountId,
     string Username,
     string GameVersion,
+    string GameServer,
     DateTimeOffset ExpiresAt,
     int IdleTimeoutSeconds);

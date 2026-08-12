@@ -9,6 +9,7 @@ public sealed class GameSessionService(
     IGameSessionRepository repository,
     IPlayerCharacterService characters,
     IOptions<GameSessionOptions> options,
+    GameHostIdentity host,
     TimeProvider timeProvider) : IGameSessionService
 {
     private readonly GameSessionOptions options = options.Value;
@@ -21,6 +22,8 @@ public sealed class GameSessionService(
         var record = await repository.RedeemAsync(
             OpaqueToken.Hash(ticket),
             OpaqueToken.Hash(accessToken),
+            host.GameVersion,
+            host.GameServer,
             Guid.NewGuid(),
             now,
             cancellationToken);
@@ -41,6 +44,8 @@ public sealed class GameSessionService(
         var now = timeProvider.GetUtcNow();
         var record = await repository.FindActiveAsync(
             OpaqueToken.Hash(accessToken),
+            host.GameVersion,
+            host.GameServer,
             now,
             now.AddMinutes(-options.IdleTimeoutMinutes),
             cancellationToken);
@@ -55,6 +60,7 @@ public sealed class GameSessionService(
         var result = await characters.SelectAsync(
             session.AccountId,
             session.GameVersion,
+            session.GameServer,
             characterId,
             cancellationToken);
         if (result.Succeeded)
@@ -74,6 +80,7 @@ public sealed class GameSessionService(
         var result = await characters.ScheduleDeletionAsync(
             session.AccountId,
             session.GameVersion,
+            session.GameServer,
             characterId,
             cancellationToken);
         if (result.Succeeded)
@@ -89,6 +96,7 @@ public sealed class GameSessionService(
         record.AccountId,
         record.Username,
         record.GameVersion,
+        record.GameServer,
         record.SelectedCharacterId,
         record.ExpiresAt);
 }

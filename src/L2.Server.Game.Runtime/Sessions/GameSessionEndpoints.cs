@@ -1,3 +1,7 @@
+using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+
 namespace L2.Server.Game.Sessions;
 
 public static class GameSessionEndpoints

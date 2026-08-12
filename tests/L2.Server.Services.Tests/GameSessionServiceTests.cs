@@ -16,12 +16,13 @@ public sealed class GameSessionServiceTests
         var repository = new StubGameSessionRepository
         {
             Redeemed = new GameSessionRecord(
-                Guid.NewGuid(), accountId, "Player", "interlude", null, Now.AddHours(1))
+                Guid.NewGuid(), accountId, "Player", "interlude", "default", null, Now.AddHours(1))
         };
         var service = new GameSessionService(
             repository,
             new StubCharacterService(),
             Options.Create(new GameSessionOptions { IdleTimeoutMinutes = 30 }),
+            new GameHostIdentity("interlude", "default"),
             new FixedTimeProvider(Now));
 
         var issue = await service.ExchangeAsync("ticket", CancellationToken.None);
@@ -32,6 +33,8 @@ public sealed class GameSessionServiceTests
         Assert.Equal(32, repository.TicketHash?.Length);
         Assert.Equal(32, repository.AccessHash?.Length);
         Assert.Equal(Now, repository.RedeemedAt);
+        Assert.Equal("interlude", repository.GameVersion);
+        Assert.Equal("default", repository.GameServer);
     }
 
     private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
@@ -45,10 +48,14 @@ public sealed class GameSessionServiceTests
         public byte[]? TicketHash { get; private set; }
         public byte[]? AccessHash { get; private set; }
         public DateTimeOffset? RedeemedAt { get; private set; }
+        public string? GameVersion { get; private set; }
+        public string? GameServer { get; private set; }
 
         public Task<GameSessionRecord?> RedeemAsync(
             byte[] ticketTokenHash,
             byte[] accessTokenHash,
+            string gameVersion,
+            string gameServer,
             Guid sessionId,
             DateTimeOffset now,
             CancellationToken cancellationToken)
@@ -56,11 +63,15 @@ public sealed class GameSessionServiceTests
             TicketHash = ticketTokenHash;
             AccessHash = accessTokenHash;
             RedeemedAt = now;
+            GameVersion = gameVersion;
+            GameServer = gameServer;
             return Task.FromResult(Redeemed);
         }
 
         public Task<GameSessionRecord?> FindActiveAsync(
             byte[] accessTokenHash,
+            string gameVersion,
+            string gameServer,
             DateTimeOffset now,
             DateTimeOffset idleCutoff,
             CancellationToken cancellationToken) => Task.FromResult<GameSessionRecord?>(null);
@@ -87,6 +98,7 @@ public sealed class GameSessionServiceTests
         public Task<IReadOnlyList<PlayerCharacterSummary>> ListAsync(
             Guid accountId,
             string gameVersion,
+            string gameServer,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<PlayerCharacterSummary>>([]);
 
@@ -98,24 +110,28 @@ public sealed class GameSessionServiceTests
         public Task<CharacterOperationResult> CreateAsync(
             Guid accountId,
             string gameVersion,
+            string gameServer,
             CharacterCreationRequest request,
             CancellationToken cancellationToken = default) => Task.FromResult(new CharacterOperationResult(false));
 
         public Task<CharacterOperationResult> SelectAsync(
             Guid accountId,
             string gameVersion,
+            string gameServer,
             Guid characterId,
             CancellationToken cancellationToken = default) => Task.FromResult(new CharacterOperationResult(false));
 
         public Task<CharacterOperationResult> ScheduleDeletionAsync(
             Guid accountId,
             string gameVersion,
+            string gameServer,
             Guid characterId,
             CancellationToken cancellationToken = default) => Task.FromResult(new CharacterOperationResult(false));
 
         public Task<CharacterOperationResult> RestoreAsync(
             Guid accountId,
             string gameVersion,
+            string gameServer,
             Guid characterId,
             CancellationToken cancellationToken = default) => Task.FromResult(new CharacterOperationResult(false));
     }

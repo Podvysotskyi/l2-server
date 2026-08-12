@@ -15,6 +15,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/L2.Server.Configurations/L2.Server.Configurations.csproj" />
+    <ProjectReference Include="../../src/L2.Server.Context/L2.Server.Context.csproj" />
     <ProjectReference Include="../../src/L2.Server.Repositories.Interfaces/L2.Server.Repositories.Interfaces.csproj" />
     <ProjectReference Include="../../src/L2.Server.Services.Interfaces/L2.Server.Services.Interfaces.csproj" />
   </ItemGroup>

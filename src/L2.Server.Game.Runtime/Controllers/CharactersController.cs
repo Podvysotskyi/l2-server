@@ -1,8 +1,9 @@
 using L2.Server.Contracts;
 using L2.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 
-namespace L2.Server.Api.Controllers;
+namespace L2.Server.Game.Controllers;
 
 [Route("api/characters")]
 public sealed class CharactersController(
@@ -15,7 +16,8 @@ public sealed class CharactersController(
         var session = await AuthenticateAsync(cancellationToken);
         return session is null
             ? Unauthorized()
-            : Ok(await characters.ListAsync(session.AccountId, session.GameVersion, cancellationToken));
+            : Ok(await characters.ListAsync(
+                session.AccountId, session.GameVersion, session.GameServer, cancellationToken));
     }
 
     [HttpGet("creation-options")]
@@ -37,6 +39,7 @@ public sealed class CharactersController(
         var result = await characters.CreateAsync(
             session.AccountId,
             session.GameVersion,
+            session.GameServer,
             request,
             cancellationToken);
         return result is { Succeeded: true, Character: not null }
@@ -74,6 +77,7 @@ public sealed class CharactersController(
         var result = await characters.RestoreAsync(
             session.AccountId,
             session.GameVersion,
+            session.GameServer,
             characterId,
             cancellationToken);
         return result is { Succeeded: true, Character: not null }

@@ -26,17 +26,12 @@ internal static partial class CredentialRequestValidator
             errors["password"] = ["Password must be 8–128 characters."];
         }
 
-        if (string.IsNullOrWhiteSpace(request.GameVersion))
-        {
-            errors["gameVersion"] = ["Select a game version."];
-        }
-
         return errors;
     }
 
     public static Dictionary<string, string[]> Validate(RegistrationRequest request)
     {
-        var errors = Validate(new LoginRequest(request.Email, request.Password, "registration"));
+        var errors = Validate(new LoginRequest(request.Email, request.Password));
         if (!UsernamePattern().IsMatch(request.Username ?? string.Empty))
         {
             errors["username"] =

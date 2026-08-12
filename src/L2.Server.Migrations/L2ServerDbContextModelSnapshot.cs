@@ -107,12 +107,6 @@ namespace L2.Server.Migrations
                         .HasColumnType("character varying(40)")
                         .HasColumnName("failure_code");
 
-                    b.Property<string>("GameVersion")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("game_version");
-
                     b.Property<string>("IpAddress")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
@@ -138,8 +132,6 @@ namespace L2.Server.Migrations
                         .HasColumnName("user_agent");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("GameVersion");
 
                     b.HasIndex("AccountId", "OccurredAt")
                         .IsDescending(false, true)
@@ -167,12 +159,6 @@ namespace L2.Server.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
-                    b.Property<string>("GameVersion")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("game_version");
-
                     b.Property<DateTimeOffset>("LastSeenAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_seen_at");
@@ -187,8 +173,6 @@ namespace L2.Server.Migrations
                         .HasColumnName("token_hash");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("GameVersion");
 
                     b.HasIndex("TokenHash")
                         .IsUnique()
@@ -225,6 +209,12 @@ namespace L2.Server.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
+                    b.Property<string>("GameServer")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("game_server");
+
                     b.Property<string>("GameVersion")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -252,7 +242,8 @@ namespace L2.Server.Migrations
                     b.HasIndex("AccountSessionId")
                         .HasDatabaseName("ix_game_sessions_account_session_id");
 
-                    b.HasIndex("GameVersion");
+                    b.HasIndex("GameVersion")
+                        .HasDatabaseName("IX_game_sessions_game_version");
 
                     b.HasIndex("RevokedAt", "ExpiresAt")
                         .HasDatabaseName("ix_game_sessions_active_expiry");
@@ -283,6 +274,12 @@ namespace L2.Server.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
+                    b.Property<string>("GameServer")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("game_server");
+
                     b.Property<string>("GameVersion")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -303,59 +300,14 @@ namespace L2.Server.Migrations
                         .HasDatabaseName("ix_game_session_tickets_pending_expiry")
                         .HasFilter("consumed_at IS NULL");
 
-                    b.HasIndex("GameVersion");
+                    b.HasIndex("GameVersion")
+                        .HasDatabaseName("IX_game_session_tickets_game_version");
 
                     b.HasIndex("TokenHash")
                         .IsUnique()
                         .HasDatabaseName("ix_game_session_tickets_token_hash");
 
                     b.ToTable("game_session_tickets", "public");
-                });
-
-            modelBuilder.Entity("L2.Server.Context.Entities.GameVersion", b =>
-                {
-                    b.Property<string>("Key")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("key");
-
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("display_name");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("integer")
-                        .HasColumnName("sort_order");
-
-                    b.HasKey("Key");
-
-                    b.HasIndex("DisplayName")
-                        .IsUnique()
-                        .HasDatabaseName("ix_game_versions_display_name");
-
-                    b.ToTable("game_versions", "public");
-
-                    b.HasData(
-                        new
-                        {
-                            Key = "c1",
-                            DisplayName = "Chronicle 1",
-                            SortOrder = 10
-                        },
-                        new
-                        {
-                            Key = "c4",
-                            DisplayName = "Chronicle 4",
-                            SortOrder = 20
-                        },
-                        new
-                        {
-                            Key = "interlude",
-                            DisplayName = "Interlude",
-                            SortOrder = 30
-                        });
                 });
 
             modelBuilder.Entity("L2.Server.Context.Entities.PlayerCharacter", b =>
@@ -395,6 +347,12 @@ namespace L2.Server.Migrations
                     b.Property<int>("FaceId")
                         .HasColumnType("integer")
                         .HasColumnName("face_id");
+
+                    b.Property<string>("GameServer")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("game_server");
 
                     b.Property<string>("GameVersion")
                         .IsRequired()
@@ -448,15 +406,15 @@ namespace L2.Server.Migrations
                         .HasDatabaseName("ix_characters_deletion_deadline")
                         .HasFilter("delete_after IS NOT NULL");
 
-                    b.HasIndex("GameVersion", "NormalizedName")
+                    b.HasIndex("GameVersion", "GameServer", "NormalizedName")
                         .IsUnique()
                         .HasDatabaseName("ix_characters_normalized_name");
 
-                    b.HasIndex("GameVersion", "AccountId", "AccountSlot")
+                    b.HasIndex("GameVersion", "GameServer", "AccountId", "AccountSlot")
                         .IsUnique()
                         .HasDatabaseName("ix_characters_account_slot");
 
-                    b.HasIndex("GameVersion", "AccountId", "CreatedAt")
+                    b.HasIndex("GameVersion", "GameServer", "AccountId", "CreatedAt")
                         .HasDatabaseName("ix_characters_account_created");
 
                     b.ToTable("characters", "public", t =>
@@ -487,15 +445,7 @@ namespace L2.Server.Migrations
                         .HasForeignKey("AccountId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("L2.Server.Context.Entities.GameVersion", "Version")
-                        .WithMany()
-                        .HasForeignKey("GameVersion")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.Navigation("Account");
-
-                    b.Navigation("Version");
                 });
 
             modelBuilder.Entity("L2.Server.Context.Entities.AccountSession", b =>
@@ -506,15 +456,7 @@ namespace L2.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("L2.Server.Context.Entities.GameVersion", "Version")
-                        .WithMany()
-                        .HasForeignKey("GameVersion")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.Navigation("Account");
-
-                    b.Navigation("Version");
                 });
 
             modelBuilder.Entity("L2.Server.Context.Entities.GameSession", b =>
@@ -525,15 +467,7 @@ namespace L2.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("L2.Server.Context.Entities.GameVersion", "Version")
-                        .WithMany()
-                        .HasForeignKey("GameVersion")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.Navigation("AccountSession");
-
-                    b.Navigation("Version");
                 });
 
             modelBuilder.Entity("L2.Server.Context.Entities.GameSessionTicket", b =>
@@ -544,26 +478,7 @@ namespace L2.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("L2.Server.Context.Entities.GameVersion", "Version")
-                        .WithMany()
-                        .HasForeignKey("GameVersion")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.Navigation("AccountSession");
-
-                    b.Navigation("Version");
-                });
-
-            modelBuilder.Entity("L2.Server.Context.Entities.PlayerCharacter", b =>
-                {
-                    b.HasOne("L2.Server.Context.Entities.GameVersion", "Version")
-                        .WithMany()
-                        .HasForeignKey("GameVersion")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Version");
                 });
 
             modelBuilder.Entity("L2.Server.Context.Entities.Account", b =>

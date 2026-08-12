@@ -1,7 +1,8 @@
 using L2.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 
-namespace L2.Server.Api.Controllers;
+namespace L2.Server.Game.Controllers;
 
 [ApiController]
 public abstract class GameControllerBase(IGameSessionService sessions) : ControllerBase
