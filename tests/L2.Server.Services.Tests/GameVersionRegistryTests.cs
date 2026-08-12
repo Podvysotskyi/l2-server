@@ -25,7 +25,7 @@ public sealed class GameVersionRegistryTests
         var versions = registry.GetEnabled();
 
         Assert.Equal([GameVersionIdentifiers.C1, GameVersionIdentifiers.C4, GameVersionIdentifiers.Interlude], versions.Select(version => version.Key));
-        Assert.Equal($"/versions/{GameVersionIdentifiers.C1}/client-manifest.json", versions[0].ClientManifestPath);
+        Assert.Equal($"/versions/{GameVersionIdentifiers.C1}/current.json", versions[0].ClientManifestPath);
         Assert.True(versions[2].IsDefault);
         Assert.True(registry.IsEnabled(GameVersionIdentifiers.C1.ToUpperInvariant()));
         Assert.True(registry.IsEnabled(GameVersionIdentifiers.Interlude, "default"));

@@ -53,6 +53,8 @@ The current migration baseline was rewritten when game-content persistence moved
 
 GitHub workflows validate the Server and Compose model independently. Pushing a `v*` tag publishes the Server API plus separate `l2-game-server-c1`, `l2-game-server-c4`, and `l2-game-server-interlude` images.
 
+Game-version discovery advertises `/versions/{version}/current.json` on the configured Asset Server. Studio owns that live release pointer; the Server does not read Studio persistence or generated assets directly.
+
 ## Checks
 
 Run builds, tests, and Compose validation inside Docker from the repository root:

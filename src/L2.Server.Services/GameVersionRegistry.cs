@@ -23,7 +23,7 @@ public sealed class GameVersionRegistry(
             version.DisplayName,
             version.Key == options.Default,
             $"/{version.Key}/game",
-            $"/versions/{version.Key}/client-manifest.json"))
+            $"/versions/{version.Key}/current.json"))
         .ToArray();
 
     public bool IsEnabled(string key) => options.Enabled.Any(
