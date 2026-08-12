@@ -15,7 +15,8 @@ public sealed class GameSessionServiceTests
         var accountId = Guid.NewGuid();
         var repository = new StubGameSessionRepository
         {
-            Redeemed = new GameSessionRecord(Guid.NewGuid(), accountId, "Player", null, Now.AddHours(1))
+            Redeemed = new GameSessionRecord(
+                Guid.NewGuid(), accountId, "Player", "interlude", null, Now.AddHours(1))
         };
         var service = new GameSessionService(
             repository,
@@ -85,30 +86,36 @@ public sealed class GameSessionServiceTests
     {
         public Task<IReadOnlyList<PlayerCharacterSummary>> ListAsync(
             Guid accountId,
+            string gameVersion,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<PlayerCharacterSummary>>([]);
 
         public Task<CharacterCreationOptions> GetCreationOptionsAsync(
+            string gameVersion,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(new CharacterCreationOptions(0, []));
 
         public Task<CharacterOperationResult> CreateAsync(
             Guid accountId,
+            string gameVersion,
             CharacterCreationRequest request,
             CancellationToken cancellationToken = default) => Task.FromResult(new CharacterOperationResult(false));
 
         public Task<CharacterOperationResult> SelectAsync(
             Guid accountId,
+            string gameVersion,
             Guid characterId,
             CancellationToken cancellationToken = default) => Task.FromResult(new CharacterOperationResult(false));
 
         public Task<CharacterOperationResult> ScheduleDeletionAsync(
             Guid accountId,
+            string gameVersion,
             Guid characterId,
             CancellationToken cancellationToken = default) => Task.FromResult(new CharacterOperationResult(false));
 
         public Task<CharacterOperationResult> RestoreAsync(
             Guid accountId,
+            string gameVersion,
             Guid characterId,
             CancellationToken cancellationToken = default) => Task.FromResult(new CharacterOperationResult(false));
     }

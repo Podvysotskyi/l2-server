@@ -11,6 +11,8 @@ public sealed class PlayerCharacter
     public Guid Id { get; set; }
     [Column("account_id")]
     public Guid AccountId { get; set; }
+    [Column("game_version"), MaxLength(32)]
+    public required string GameVersion { get; set; }
     [Column("account_slot")]
     public int AccountSlot { get; set; }
     [Column("name"), MaxLength(16)]
@@ -43,4 +45,5 @@ public sealed class PlayerCharacter
     public DateTimeOffset UpdatedAt { get; set; }
     [Column("delete_after")]
     public DateTimeOffset? DeleteAfter { get; set; }
+    public GameVersion Version { get; set; } = null!;
 }

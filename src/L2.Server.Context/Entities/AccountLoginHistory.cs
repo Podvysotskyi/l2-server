@@ -10,6 +10,8 @@ public sealed class AccountLoginHistory
     public Guid Id { get; set; }
     [Column("account_id")]
     public Guid? AccountId { get; set; }
+    [Column("game_version"), MaxLength(32)]
+    public required string GameVersion { get; set; }
     [Column("normalized_email"), MaxLength(254)]
     public required string NormalizedEmail { get; set; }
     [Column("succeeded")]
@@ -23,4 +25,5 @@ public sealed class AccountLoginHistory
     [Column("occurred_at")]
     public DateTimeOffset OccurredAt { get; set; }
     public Account? Account { get; set; }
+    public GameVersion Version { get; set; } = null!;
 }

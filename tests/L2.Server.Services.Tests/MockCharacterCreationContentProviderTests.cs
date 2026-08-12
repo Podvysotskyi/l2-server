@@ -7,7 +7,7 @@ public sealed class MockCharacterCreationContentProviderTests
     {
         var provider = new MockCharacterCreationContentProvider();
 
-        var options = await provider.GetAsync();
+        var options = await provider.GetAsync("interlude");
 
         Assert.Equal(2, options.Classes.Count);
         Assert.Contains(options.Classes, item =>
@@ -45,6 +45,6 @@ public sealed class MockCharacterCreationContentProviderTests
         await source.CancelAsync();
 
         await Assert.ThrowsAsync<OperationCanceledException>(
-            () => provider.GetAsync(source.Token));
+            () => provider.GetAsync("interlude", source.Token));
     }
 }

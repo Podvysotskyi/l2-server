@@ -35,6 +35,15 @@ public static class ServerApplicationConfigurationExtensions
     private static void AddGameServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.TryAddTimeProvider();
+        services.AddOptions<GameVersionOptions>()
+            .Bind(configuration.GetSection(GameVersionOptions.SectionName))
+            .Validate(options => options.Enabled.Count > 0, "At least one game version must be enabled.")
+            .Validate(options => options.Enabled.Select(version => version.Key).Distinct(StringComparer.OrdinalIgnoreCase).Count() == options.Enabled.Count,
+                "Game version keys must be unique.")
+            .Validate(options => options.Enabled.Any(version => string.Equals(version.Key, options.Default, StringComparison.OrdinalIgnoreCase)),
+                "The default game version must be enabled.")
+            .ValidateOnStart();
+        services.AddSingleton<IGameVersionRegistry, GameVersionRegistry>();
         services.AddOptions<GameSessionOptions>()
             .Bind(configuration.GetSection(GameSessionOptions.SectionName))
             .Validate(options => options.IdleTimeoutMinutes > 0,

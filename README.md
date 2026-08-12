@@ -23,6 +23,12 @@ The Server owns gameplay authority and player persistence. Studio owns game-cont
 
 `L2.Server.Api` issues opaque, hashed game-session tokens and authorizes character management over HTTP. It exchanges an authenticated cookie for a single-use game ticket. `L2.Server.Game` validates the ticket-derived game session and opens protocol-v2 gameplay WebSockets only after character selection.
 
+The Login API exposes the enabled Chronicle 1, Chronicle 4, and Interlude
+versions at `GET /api/game-versions`. Login requires a version key, and that key
+is retained through the cookie session, one-time game ticket, game session,
+character operations, and gameplay socket. Accounts are shared; characters and
+concurrent-session replacement are isolated by version.
+
 ## Prerequisites
 
 - Docker Engine with Docker Compose

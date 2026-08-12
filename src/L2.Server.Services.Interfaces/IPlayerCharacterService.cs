@@ -4,22 +4,31 @@ namespace L2.Server.Services.Interfaces;
 
 public interface IPlayerCharacterService
 {
-    Task<IReadOnlyList<PlayerCharacterSummary>> ListAsync(Guid accountId, CancellationToken cancellationToken = default);
-    Task<CharacterCreationOptions> GetCreationOptionsAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<PlayerCharacterSummary>> ListAsync(
+        Guid accountId,
+        string gameVersion,
+        CancellationToken cancellationToken = default);
+    Task<CharacterCreationOptions> GetCreationOptionsAsync(
+        string gameVersion,
+        CancellationToken cancellationToken = default);
     Task<CharacterOperationResult> CreateAsync(
         Guid accountId,
+        string gameVersion,
         CharacterCreationRequest request,
         CancellationToken cancellationToken = default);
     Task<CharacterOperationResult> SelectAsync(
         Guid accountId,
+        string gameVersion,
         Guid characterId,
         CancellationToken cancellationToken = default);
     Task<CharacterOperationResult> ScheduleDeletionAsync(
         Guid accountId,
+        string gameVersion,
         Guid characterId,
         CancellationToken cancellationToken = default);
     Task<CharacterOperationResult> RestoreAsync(
         Guid accountId,
+        string gameVersion,
         Guid characterId,
         CancellationToken cancellationToken = default);
 }

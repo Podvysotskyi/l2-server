@@ -8,10 +8,19 @@ public sealed class CredentialRequestValidatorTests
     [Fact]
     public void Login_rejects_invalid_email_and_short_password()
     {
-        var errors = CredentialRequestValidator.Validate(new LoginRequest("invalid", "short"));
+        var errors = CredentialRequestValidator.Validate(new LoginRequest("invalid", "short", "interlude"));
 
         Assert.Contains("email", errors.Keys);
         Assert.Contains("password", errors.Keys);
+    }
+
+    [Fact]
+    public void Login_requires_a_game_version()
+    {
+        var errors = CredentialRequestValidator.Validate(new LoginRequest(
+            "player@example.com", "password1", ""));
+
+        Assert.Contains("gameVersion", errors.Keys);
     }
 
     [Fact]

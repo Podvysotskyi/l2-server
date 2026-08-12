@@ -4,6 +4,7 @@ public sealed record GameSessionReady(
     string Type,
     Guid AccountId,
     string Username,
+    string GameVersion,
     PlayerCharacterSummary Character,
     int ProtocolVersion,
     string ServerBuild,

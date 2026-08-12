@@ -15,16 +15,19 @@ public sealed class PlayerAuthenticationService : IPlayerAuthenticationService
     private readonly TimeSpan sessionLifetime;
     private readonly TimeSpan gameTicketLifetime;
     private readonly string fallbackPasswordHash;
+    private readonly IGameVersionRegistry gameVersions;
 
     public PlayerAuthenticationService(
         IPlayerAuthenticationRepository repository,
         IPasswordHasher<CredentialRecord> passwordHasher,
         TimeProvider timeProvider,
+        IGameVersionRegistry gameVersions,
         IOptions<AuthenticationSessionOptions> options)
     {
         this.repository = repository;
         this.passwordHasher = passwordHasher;
         this.timeProvider = timeProvider;
+        this.gameVersions = gameVersions;
         sessionLifetime = TimeSpan.FromHours(options.Value.SessionIdleHours);
         gameTicketLifetime = TimeSpan.FromSeconds(options.Value.GameTicketLifetimeSeconds);
         fallbackPasswordHash = passwordHasher.HashPassword(
@@ -58,6 +61,8 @@ public sealed class PlayerAuthenticationService : IPlayerAuthenticationService
         string? userAgent,
         CancellationToken cancellationToken)
     {
+        var gameVersion = request.GameVersion.Trim().ToLowerInvariant();
+        if (!gameVersions.IsEnabled(gameVersion)) return null;
         var normalizedEmail = CredentialNormalizer.Email(request.Email);
         var credential = await repository.FindCredentialAsync(normalizedEmail, cancellationToken);
         var verification = credential is null
@@ -70,7 +75,7 @@ public sealed class PlayerAuthenticationService : IPlayerAuthenticationService
         var now = timeProvider.GetUtcNow();
         if (credential is null || verification == PasswordVerificationResult.Failed)
         {
-            await repository.RecordFailedLoginAsync(credential?.AccountId, normalizedEmail,
+            await repository.RecordFailedLoginAsync(credential?.AccountId, normalizedEmail, gameVersion,
                 new RequestMetadata(ipAddress, userAgent), now, cancellationToken);
             return null;
         }
@@ -83,13 +88,18 @@ public sealed class PlayerAuthenticationService : IPlayerAuthenticationService
         await repository.CreateLoginSessionAsync(
             credential,
             normalizedEmail,
+            gameVersion,
             replacementHash,
             OpaqueToken.Hash(token),
             now,
             expiresAt,
             new RequestMetadata(ipAddress, userAgent),
             cancellationToken);
-        return new AuthenticationIssue(new AuthenticationSession(credential.AccountId, credential.Username, expiresAt), token);
+        return new AuthenticationIssue(new AuthenticationSession(
+            credential.AccountId,
+            credential.Username,
+            gameVersion,
+            expiresAt), token);
     }
 
     public async Task<L2.Server.Services.Interfaces.AuthenticationSessionLookup?> FindSessionAsync(

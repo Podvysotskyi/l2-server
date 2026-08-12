@@ -28,7 +28,7 @@ public sealed class PlayerCharacterServiceTests
         var repository = new StubRepository();
         var service = CreateService(repository, new StubCharacterCreationContentProvider());
 
-        var result = await service.CreateAsync(Guid.NewGuid(),
+        var result = await service.CreateAsync(Guid.NewGuid(), "interlude",
             new CharacterCreationRequest("!", 0, 0, 0, 0, 0, 0));
 
         Assert.False(result.Succeeded);
@@ -63,7 +63,7 @@ public sealed class PlayerCharacterServiceTests
         };
         var service = CreateService(repository, creationContentProvider);
 
-        var result = await service.CreateAsync(Guid.NewGuid(),
+        var result = await service.CreateAsync(Guid.NewGuid(), "interlude",
             new CharacterCreationRequest(" Hero ", 1, 2, 3, 4, 5, 6));
 
         Assert.True(result.Succeeded);
@@ -82,7 +82,7 @@ public sealed class PlayerCharacterServiceTests
             CreationOptions = ValidCreationOptions
         });
 
-        var options = await service.GetCreationOptionsAsync();
+        var options = await service.GetCreationOptionsAsync("interlude");
 
         Assert.Equal(7, options.MaximumCharacters);
         Assert.Same(ValidCreationOptions.Classes, options.Classes);
@@ -97,7 +97,7 @@ public sealed class PlayerCharacterServiceTests
             CreationOptions = ValidCreationOptions
         });
 
-        var result = await service.CreateAsync(Guid.NewGuid(),
+        var result = await service.CreateAsync(Guid.NewGuid(), "interlude",
             new CharacterCreationRequest("Hero", 99, 2, 3, 4, 5, 6));
 
         Assert.False(result.Succeeded);
@@ -114,7 +114,7 @@ public sealed class PlayerCharacterServiceTests
             CreationOptions = ValidCreationOptions
         });
 
-        var result = await service.CreateAsync(Guid.NewGuid(),
+        var result = await service.CreateAsync(Guid.NewGuid(), "interlude",
             new CharacterCreationRequest("Hero", 1, 2, 3, 99, 5, 6));
 
         Assert.False(result.Succeeded);
@@ -128,7 +128,7 @@ public sealed class PlayerCharacterServiceTests
         var repository = new StubRepository();
         var service = CreateService(repository, new StubCharacterCreationContentProvider());
 
-        await service.ScheduleDeletionAsync(Guid.NewGuid(), Guid.NewGuid());
+        await service.ScheduleDeletionAsync(Guid.NewGuid(), "interlude", Guid.NewGuid());
 
         Assert.Equal(Now, repository.DeletionNow);
         Assert.Equal(Now.AddDays(7), repository.DeleteAfter);
@@ -166,6 +166,7 @@ public sealed class PlayerCharacterServiceTests
 
         public Task<IReadOnlyList<PlayerCharacterSummary>> ListAsync(
             Guid accountId,
+            string gameVersion,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<PlayerCharacterSummary>>([]);
 
@@ -179,12 +180,14 @@ public sealed class PlayerCharacterServiceTests
 
         public Task<CharacterMutationResult> SelectAsync(
             Guid accountId,
+            string gameVersion,
             Guid characterId,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(new CharacterMutationResult(false));
 
         public Task<CharacterMutationResult> ScheduleDeletionAsync(
             Guid accountId,
+            string gameVersion,
             Guid characterId,
             DateTimeOffset deleteAfter,
             DateTimeOffset now,
@@ -197,6 +200,7 @@ public sealed class PlayerCharacterServiceTests
 
         public Task<CharacterMutationResult> RestoreAsync(
             Guid accountId,
+            string gameVersion,
             Guid characterId,
             DateTimeOffset now,
             CancellationToken cancellationToken = default) =>
@@ -208,6 +212,7 @@ public sealed class PlayerCharacterServiceTests
         public CharacterCreationOptions CreationOptions { get; init; } = new(0, []);
 
         public Task<CharacterCreationOptions> GetAsync(
+            string gameVersion,
             CancellationToken cancellationToken = default) => Task.FromResult(CreationOptions);
     }
 }

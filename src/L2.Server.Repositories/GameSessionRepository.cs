@@ -38,6 +38,7 @@ public sealed class GameSessionRepository(IDbContextFactory<L2ServerDbContext> c
             {
                 Id = sessionId,
                 AccountSessionId = pendingTicket.AccountSessionId,
+                GameVersion = pendingTicket.GameVersion,
                 AccessTokenHash = accessTokenHash,
                 CreatedAt = now,
                 LastSeenAt = now,
@@ -47,7 +48,7 @@ public sealed class GameSessionRepository(IDbContextFactory<L2ServerDbContext> c
             await context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return new GameSessionRecord(gameSession.Id, pendingTicket.AccountSession.AccountId,
-                pendingTicket.AccountSession.Account.Username, null, gameSession.ExpiresAt);
+                pendingTicket.AccountSession.Account.Username, gameSession.GameVersion, null, gameSession.ExpiresAt);
         }
         catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
         {
@@ -79,7 +80,7 @@ public sealed class GameSessionRepository(IDbContextFactory<L2ServerDbContext> c
                 await context.SaveChangesAsync(cancellationToken);
             }
             return new GameSessionRecord(session.Id, session.AccountSession.AccountId,
-                session.AccountSession.Account.Username, session.SelectedCharacterId, session.ExpiresAt);
+                session.AccountSession.Account.Username, session.GameVersion, session.SelectedCharacterId, session.ExpiresAt);
         }
         catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
         {

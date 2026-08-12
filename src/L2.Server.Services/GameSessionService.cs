@@ -52,7 +52,11 @@ public sealed class GameSessionService(
         Guid characterId,
         CancellationToken cancellationToken)
     {
-        var result = await characters.SelectAsync(session.AccountId, characterId, cancellationToken);
+        var result = await characters.SelectAsync(
+            session.AccountId,
+            session.GameVersion,
+            characterId,
+            cancellationToken);
         if (result.Succeeded)
             await repository.SelectCharacterAsync(
                 session.SessionId,
@@ -67,7 +71,11 @@ public sealed class GameSessionService(
         Guid characterId,
         CancellationToken cancellationToken)
     {
-        var result = await characters.ScheduleDeletionAsync(session.AccountId, characterId, cancellationToken);
+        var result = await characters.ScheduleDeletionAsync(
+            session.AccountId,
+            session.GameVersion,
+            characterId,
+            cancellationToken);
         if (result.Succeeded)
             await repository.ClearCharacterAsync(session.SessionId, characterId, cancellationToken);
         return result;
@@ -80,6 +88,7 @@ public sealed class GameSessionService(
         record.SessionId,
         record.AccountId,
         record.Username,
+        record.GameVersion,
         record.SelectedCharacterId,
         record.ExpiresAt);
 }

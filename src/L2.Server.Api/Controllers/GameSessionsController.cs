@@ -26,6 +26,7 @@ public sealed class GameSessionsController(IGameSessionService sessions) : GameC
             issue.AccessToken,
             issue.Session.AccountId,
             issue.Session.Username,
+            issue.Session.GameVersion,
             issue.Session.ExpiresAt,
             issue.IdleTimeoutSeconds));
     }

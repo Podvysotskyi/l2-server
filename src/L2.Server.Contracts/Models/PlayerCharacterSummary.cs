@@ -4,6 +4,7 @@ public sealed record PlayerCharacterSummary(
     Guid Id,
     int AccountSlot,
     string Name,
+    string GameVersion,
     int RaceId,
     int SexId,
     int BaseClassId,

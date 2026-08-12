@@ -77,6 +77,7 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
     public async Task CreateLoginSessionAsync(
         CredentialRecord credential,
         string normalizedEmail,
+        string gameVersion,
         string? replacementPasswordHash,
         byte[] tokenHash,
         DateTimeOffset now,
@@ -89,7 +90,8 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
             await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
             await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
             await context.AccountSessions
-                .Where(session => session.AccountId == credential.AccountId && session.RevokedAt == null)
+                .Where(session => session.AccountId == credential.AccountId &&
+                    session.GameVersion == gameVersion && session.RevokedAt == null)
                 .ExecuteUpdateAsync(update => update.SetProperty(session => session.RevokedAt, now), cancellationToken);
             if (replacementPasswordHash is not null)
             {
@@ -100,9 +102,9 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
                         .SetProperty(existing => existing.UpdatedAt, now), cancellationToken);
             }
 
-            context.AccountSessions.Add(CreateSession(credential.AccountId, tokenHash, now, expiresAt));
+            context.AccountSessions.Add(CreateSession(credential.AccountId, gameVersion, tokenHash, now, expiresAt));
             context.AccountLoginHistory.Add(CreateHistory(
-                credential.AccountId, normalizedEmail, true, null, metadata, now));
+                credential.AccountId, normalizedEmail, gameVersion, true, null, metadata, now));
             await context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
@@ -115,6 +117,7 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
     public async Task RecordFailedLoginAsync(
         Guid? accountId,
         string normalizedEmail,
+        string gameVersion,
         RequestMetadata metadata,
         DateTimeOffset now,
         CancellationToken cancellationToken)
@@ -123,7 +126,7 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
         {
             await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
             context.AccountLoginHistory.Add(CreateHistory(
-                accountId, normalizedEmail, false, "invalid_credentials", metadata, now));
+                accountId, normalizedEmail, gameVersion, false, "invalid_credentials", metadata, now));
             await context.SaveChangesAsync(cancellationToken);
         }
         catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
@@ -162,7 +165,11 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
             }
 
             return new AuthenticationSessionRecord(
-                new AuthenticationSession(session.AccountId, session.Account.Username, session.ExpiresAt),
+                new AuthenticationSession(
+                    session.AccountId,
+                    session.Account.Username,
+                    session.GameVersion,
+                    session.ExpiresAt),
                 refreshed);
         }
         catch (Exception exception) when (PostgreSqlExceptionClassifier.IsPersistenceFailure(exception))
@@ -188,7 +195,7 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
             var sessionId = await context.AccountSessions
                 .Where(session => session.TokenHash.SequenceEqual(sessionTokenHash) &&
                     session.RevokedAt == null && session.ExpiresAt > now)
-                .Select(session => (Guid?)session.Id)
+                .Select(session => new { session.Id, session.GameVersion })
                 .SingleOrDefaultAsync(cancellationToken);
             if (sessionId is null)
             {
@@ -199,7 +206,8 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
             context.GameSessionTickets.Add(new GameSessionTicket
             {
                 Id = Guid.NewGuid(),
-                AccountSessionId = sessionId.Value,
+                AccountSessionId = sessionId.Id,
+                GameVersion = sessionId.GameVersion,
                 TokenHash = ticketTokenHash,
                 CreatedAt = now,
                 ExpiresAt = expiresAt
@@ -231,12 +239,14 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
 
     private static AccountSession CreateSession(
         Guid accountId,
+        string gameVersion,
         byte[] tokenHash,
         DateTimeOffset now,
         DateTimeOffset expiresAt) => new()
         {
             Id = Guid.NewGuid(),
             AccountId = accountId,
+            GameVersion = gameVersion,
             TokenHash = tokenHash,
             CreatedAt = now,
             LastSeenAt = now,
@@ -246,6 +256,7 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
     private static AccountLoginHistory CreateHistory(
         Guid? accountId,
         string normalizedEmail,
+        string gameVersion,
         bool succeeded,
         string? failureCode,
         RequestMetadata metadata,
@@ -253,6 +264,7 @@ public sealed class PlayerAuthenticationRepository(IDbContextFactory<L2ServerDbC
         {
             Id = Guid.NewGuid(),
             AccountId = accountId,
+            GameVersion = gameVersion,
             NormalizedEmail = normalizedEmail,
             Succeeded = succeeded,
             FailureCode = failureCode,

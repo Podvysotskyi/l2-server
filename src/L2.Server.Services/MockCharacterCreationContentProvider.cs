@@ -15,7 +15,9 @@ public sealed class MockCharacterCreationContentProvider : ICharacterCreationCon
         RootClass(10, "Human Mystic", true)
     ]);
 
-    public Task<CharacterCreationOptions> GetAsync(CancellationToken cancellationToken = default)
+    public Task<CharacterCreationOptions> GetAsync(
+        string gameVersion,
+        CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 

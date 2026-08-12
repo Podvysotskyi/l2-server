@@ -15,7 +15,7 @@ public sealed class CharactersController(
         var session = await AuthenticateAsync(cancellationToken);
         return session is null
             ? Unauthorized()
-            : Ok(await characters.ListAsync(session.AccountId, cancellationToken));
+            : Ok(await characters.ListAsync(session.AccountId, session.GameVersion, cancellationToken));
     }
 
     [HttpGet("creation-options")]
@@ -24,7 +24,7 @@ public sealed class CharactersController(
         var session = await AuthenticateAsync(cancellationToken);
         return session is null
             ? Unauthorized()
-            : Ok(await characters.GetCreationOptionsAsync(cancellationToken));
+            : Ok(await characters.GetCreationOptionsAsync(session.GameVersion, cancellationToken));
     }
 
     [HttpPost]
@@ -34,7 +34,11 @@ public sealed class CharactersController(
     {
         var session = await AuthenticateAsync(cancellationToken);
         if (session is null) return Unauthorized();
-        var result = await characters.CreateAsync(session.AccountId, request, cancellationToken);
+        var result = await characters.CreateAsync(
+            session.AccountId,
+            session.GameVersion,
+            request,
+            cancellationToken);
         return result is { Succeeded: true, Character: not null }
             ? StatusCode(StatusCodes.Status201Created, result.Character)
             : DomainProblem(result.ErrorCode ?? "character_conflict");
@@ -67,7 +71,11 @@ public sealed class CharactersController(
     {
         var session = await AuthenticateAsync(cancellationToken);
         if (session is null) return Unauthorized();
-        var result = await characters.RestoreAsync(session.AccountId, characterId, cancellationToken);
+        var result = await characters.RestoreAsync(
+            session.AccountId,
+            session.GameVersion,
+            characterId,
+            cancellationToken);
         return result is { Succeeded: true, Character: not null }
             ? Ok(result.Character)
             : DomainProblem(result.ErrorCode ?? "character_conflict");

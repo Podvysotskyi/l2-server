@@ -16,21 +16,24 @@ public sealed partial class PlayerCharacterService(
 
     public async Task<IReadOnlyList<PlayerCharacterSummary>> ListAsync(
         Guid accountId,
+        string gameVersion,
         CancellationToken cancellationToken = default)
     {
         await repository.CleanupExpiredAsync(timeProvider.GetUtcNow(), cancellationToken);
-        return await repository.ListAsync(accountId, cancellationToken);
+        return await repository.ListAsync(accountId, gameVersion, cancellationToken);
     }
 
     public async Task<CharacterCreationOptions> GetCreationOptionsAsync(
+        string gameVersion,
         CancellationToken cancellationToken = default)
     {
-        var creationOptions = await creationContentProvider.GetAsync(cancellationToken);
+        var creationOptions = await creationContentProvider.GetAsync(gameVersion, cancellationToken);
         return creationOptions with { MaximumCharacters = options.MaximumCharactersPerAccount };
     }
 
     public async Task<CharacterOperationResult> CreateAsync(
         Guid accountId,
+        string gameVersion,
         CharacterCreationRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -42,7 +45,7 @@ public sealed partial class PlayerCharacterService(
             return new(false, "invalid_name");
         }
 
-        var creationOptions = await creationContentProvider.GetAsync(cancellationToken);
+        var creationOptions = await creationContentProvider.GetAsync(gameVersion, cancellationToken);
         var rootClass = creationOptions.Classes.SingleOrDefault(candidate => candidate.Id == request.ClassId);
         var race = rootClass?.AllowedRaces.SingleOrDefault(candidate => candidate.Id == request.RaceId);
         var sex = race?.AllowedSexes.SingleOrDefault(candidate => candidate.Id == request.SexId);
@@ -61,6 +64,7 @@ public sealed partial class PlayerCharacterService(
         await repository.CleanupExpiredAsync(now, cancellationToken);
         return ToResult(await repository.CreateAsync(new CharacterCreationData(
             accountId,
+            gameVersion,
             name,
             name.ToUpperInvariant(),
             request.ClassId,
@@ -76,18 +80,21 @@ public sealed partial class PlayerCharacterService(
 
     public async Task<CharacterOperationResult> SelectAsync(
         Guid accountId,
+        string gameVersion,
         Guid characterId,
         CancellationToken cancellationToken = default) =>
-        ToResult(await repository.SelectAsync(accountId, characterId, cancellationToken));
+        ToResult(await repository.SelectAsync(accountId, gameVersion, characterId, cancellationToken));
 
     public async Task<CharacterOperationResult> ScheduleDeletionAsync(
         Guid accountId,
+        string gameVersion,
         Guid characterId,
         CancellationToken cancellationToken = default)
     {
         var now = timeProvider.GetUtcNow();
         return ToResult(await repository.ScheduleDeletionAsync(
             accountId,
+            gameVersion,
             characterId,
             now.AddDays(options.DeletionDelayDays),
             now,
@@ -96,10 +103,12 @@ public sealed partial class PlayerCharacterService(
 
     public async Task<CharacterOperationResult> RestoreAsync(
         Guid accountId,
+        string gameVersion,
         Guid characterId,
         CancellationToken cancellationToken = default) =>
         ToResult(await repository.RestoreAsync(
             accountId,
+            gameVersion,
             characterId,
             timeProvider.GetUtcNow(),
             cancellationToken));

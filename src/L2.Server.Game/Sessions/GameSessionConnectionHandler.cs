@@ -81,7 +81,11 @@ public sealed class GameSessionConnectionHandler(
             return;
         }
 
-        var selected = await characters.SelectAsync(session.AccountId, characterId, context.RequestAborted);
+        var selected = await characters.SelectAsync(
+            session.AccountId,
+            session.GameVersion,
+            characterId,
+            context.RequestAborted);
         if (selected is not { Succeeded: true, Character: not null })
         {
             await RejectAsync(socket, "character_unavailable", "Selected character is unavailable.");
@@ -92,6 +96,7 @@ public sealed class GameSessionConnectionHandler(
             "session.ready",
             session.AccountId,
             session.Username,
+            session.GameVersion,
             selected.Character,
             options.Value.ProtocolVersion,
             identity.BuildVersion,

@@ -17,6 +17,7 @@ public interface IPlayerAuthenticationRepository
     Task CreateLoginSessionAsync(
         CredentialRecord credential,
         string normalizedEmail,
+        string gameVersion,
         string? replacementPasswordHash,
         byte[] tokenHash,
         DateTimeOffset now,
@@ -26,6 +27,7 @@ public interface IPlayerAuthenticationRepository
     Task RecordFailedLoginAsync(
         Guid? accountId,
         string normalizedEmail,
+        string gameVersion,
         RequestMetadata metadata,
         DateTimeOffset now,
         CancellationToken cancellationToken);

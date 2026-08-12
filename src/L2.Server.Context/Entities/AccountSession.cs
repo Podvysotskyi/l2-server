@@ -10,6 +10,8 @@ public sealed class AccountSession
     public Guid Id { get; set; }
     [Column("account_id")]
     public Guid AccountId { get; set; }
+    [Column("game_version"), MaxLength(32)]
+    public required string GameVersion { get; set; }
     [Column("token_hash")]
     public required byte[] TokenHash { get; set; }
     [Column("created_at")]
@@ -21,6 +23,7 @@ public sealed class AccountSession
     [Column("revoked_at")]
     public DateTimeOffset? RevokedAt { get; set; }
     public Account Account { get; set; } = null!;
+    public GameVersion Version { get; set; } = null!;
     public ICollection<GameSessionTicket> GameTickets { get; set; } = [];
     public ICollection<GameSession> GameSessions { get; set; } = [];
 }

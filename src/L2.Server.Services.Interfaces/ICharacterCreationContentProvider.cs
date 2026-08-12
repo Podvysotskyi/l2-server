@@ -4,5 +4,5 @@ namespace L2.Server.Services.Interfaces;
 
 public interface ICharacterCreationContentProvider
 {
-    Task<CharacterCreationOptions> GetAsync(CancellationToken cancellationToken = default);
+    Task<CharacterCreationOptions> GetAsync(string gameVersion, CancellationToken cancellationToken = default);
 }
