@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -22,6 +23,14 @@ public static class ServerHostConfigurationExtensions
     {
         builder.Logging.ClearProviders();
         builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);
+        builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
+        builder.Logging.AddFilter("Microsoft.AspNetCore.Routing.EndpointMiddleware", LogLevel.Warning);
+        builder.Logging.AddFilter("Microsoft.AspNetCore.HttpLogging.HttpLoggingMiddleware", LogLevel.Information);
+        builder.Services.AddHttpLogging(options => options.LoggingFields =
+            HttpLoggingFields.RequestProperties |
+            HttpLoggingFields.ResponseStatusCode |
+            HttpLoggingFields.Duration);
+        builder.Services.AddHttpLoggingInterceptor<HealthCheckHttpLoggingInterceptor>();
         builder.Services.AddHttpClient();
 
         var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -39,6 +48,7 @@ public static class ServerHostConfigurationExtensions
 
     public static WebApplication MapServerHost(this WebApplication app)
     {
+        app.UseHttpLogging();
         app.UseCors();
         app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
         app.MapHealthChecks("/health/ready", new HealthCheckOptions
