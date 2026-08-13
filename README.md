@@ -2,6 +2,9 @@
 
 Authoritative L2 backend for player identity, character management, and gameplay-session authority. It provides one shared Server API and separate Chronicle 1, Chronicle 4, and Interlude Game hosts backed by the same PostgreSQL database.
 
+See [docs/architecture.md](docs/architecture.md) for host, authority,
+persistence, and cross-product boundaries.
+
 ## Architecture
 
 The .NET solution is split into focused projects:

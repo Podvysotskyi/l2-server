@@ -2,9 +2,12 @@
 
 ## Scope
 
-This repository owns authoritative Login and Game Server behavior, player identity, player characters, Server-owned content, and its PostgreSQL persistence and migrations. Studio authoring, Admin UI/API operations, browser presentation, and external-service persistence remain outside this repository.
+This repository owns authoritative Login and Game Server behavior, player identity, player characters, gameplay state, and its PostgreSQL persistence and migrations. Studio owns authored content, asset catalogs, generated artifacts, and releases. Admin UI/API operations, browser presentation, and external-service persistence remain outside this repository.
 
-The Server owns gameplay authority. External producers use Server-boundary contracts and map their payloads into Server-owned models. Do not depend on shared entities or import Studio/Admin EF Core models, `DbContext` types, migrations, or domain rules. Admin reads Server-owned data only through narrow internal read APIs or an Admin-owned read model.
+The Server owns gameplay authority. External producers use Server-boundary contracts and map their payloads into Server-owned models. Do not depend on shared entities or import Studio/Admin EF Core models, `DbContext` types, migrations, or domain rules. Admin currently reads selected Server tables through an independently owned, read-only model.
+
+Keep [docs/architecture.md](docs/architecture.md) aligned when host, authority,
+persistence, or cross-product boundaries change.
 
 ## Commands
 
@@ -22,10 +25,10 @@ Do not run development, checks, builds, tests, publishing, or EF Core commands w
 Start the repository-owned development stack with:
 
 ```sh
-docker compose up --build postgres redis api-server game-server
+docker compose up --build postgres redis api-server game-interlude-default game-c1-default game-c4-default
 ```
 
-`api-server` and `game-server` apply the Server migration stream at startup unless `Persistence__RunMigrations=false`. `/health/live` is process liveness; `/health/ready` also verifies that no Server migrations are pending.
+The API and Game hosts apply the Server migration stream at startup unless `Persistence__RunMigrations=false`. `/health/live` is process liveness; `/health/ready` also verifies that no Server migrations are pending.
 
 ## Architecture
 
